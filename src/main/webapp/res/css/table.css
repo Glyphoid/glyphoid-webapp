@@ -1,0 +1,60 @@
+table.tablebody {
+    width: 100%;
+    background-color: #eaf1fe;
+    border: 1px #5a99b1 solid;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+table.workerTableBody {
+    width: 100%;
+    background-color: #eaf8ff;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 80%;
+    text-align: left;
+}
+
+td.cell {
+    border-bottom: 1px #6699CC dotted;
+    text-align: left;
+    font-weight: normal;
+    font-size: .9em;
+    color: #404040;
+    background-color: #f6f6f6;
+    padding: 4px 0 4px 8px;
+}
+
+td.header {
+    border-bottom: 1px #5a99b1 solid;
+    text-align: left;
+    font-weight: bold;
+    font-size: .9em;
+    color: #404040;
+    background-color: lightsteelblue;
+    padding: 4px 0 4px 8px;
+}
+
+th.header {
+    border-bottom: 1px #5a99b1 solid;
+    text-align: left;
+    font-weight: bold;
+    font-size: .9em;
+    color: #404040;
+    background-color: lightsteelblue;
+    padding: 4px 0 4px 8px;
+}
+
+td.checkbox {
+    border-bottom: 1px #6699CC dotted;
+    width: 20px;
+    background-color: #f6f6f6;
+    padding: 4px 0 4px 8px;
+}
+
+td.headercheckbox {
+    border-bottom: 1px #5a99b1 solid;
+    width: 20px;
+    background-color: lightsteelblue;
+    padding: 4px 0 4px 8px;
+}

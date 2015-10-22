@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <link rel="stylesheet" type="text/css" href="css/lib/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css">
+
+    <script type="text/javascript" src="js/libs/underscore-1.8.2.js"></script>
+    <script type="text/javascript" src="js/libs/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="js/libs/aws/aws-sdk.min.js"></script>
+    <script type="text/javascript" src="js/main-dev.js"></script>
+</head>
+<body>
+    <div>
+        Access Key:<input id="awsAccessKey" value="" />
+        Secret Key:<input id="awsSecretKey" type="password" value="" />
+        Region:<input id="awsRegion" value="us-east-1"/>
+        <br/>
+        Date Prefix:<input id="datePrefix" type="date"/>
+        <br/>
+        Client type:<input id="clientType" value="DesktopBrowser"/>
+
+        <button type="submit" id="getSessions">Get sessions</button>
+    </div>
+
+    <table>
+        <tr>
+            <td style="width: 50%;">
+                <div>
+                    <ul id="sessionList">
+
+                    </ul>
+                </div>
+            </td>
+            <td style="width: 50%;">
+                <ul id="actionList">
+
+                </ul>
+            </td>
+        </tr>
+
+    </table>
+
+    <div id="mainDiv"></div>
+</body>
+</html>

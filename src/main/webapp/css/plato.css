@@ -1,0 +1,101 @@
+.textDisplay {
+    width     : 600px;
+    height    : 100px;
+    font-size : 66%;
+}
+
+.funcButton {
+    width     : 180px;
+    height    : 30px;
+    font-size : 110%
+}
+
+#parseTokenSet {
+    /*border:1px solid #ffad41; -webkit-border-radius: 3px; -moz-border-radius: 3px;border-radius: 3px;font-size:12px;font-family:arial, helvetica, sans-serif; padding: 0px 0px 0px 0px; text-decoration:none; display:inline-block;text-shadow: -1px -1px 0 rgba(0,0,0,0.3);font-weight:bold; color: #FFFFFF;*/
+    background-color: #fb9d23; background-image: -webkit-gradient(linear, left top, left bottom, from(#fb9d23), to(#fb9d23));
+    background-image: -webkit-linear-gradient(top, #fb9d23, #fb9d23);
+    background-image: -moz-linear-gradient(top, #fb9d23, #fb9d23);
+    background-image: -ms-linear-gradient(top, #fb9d23, #fb9d23);
+    background-image: -o-linear-gradient(top, #fb9d23, #fb9d23);
+    background-image: linear-gradient(to bottom, #fb9d23, #fb9d23);filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr=#ffc579, endColorstr=#fb9d23);
+}
+
+.SetTokenBtn {
+    width     : 60px;
+    height    : 30px;
+    font-size : 110%
+}
+
+.TokenCandBtn {
+    width     : 80px;
+    height    : 30px;
+    font-size : 100%
+}
+
+.CommandButton {
+    min-width    : 50px;
+    width        : 100px;
+    min-height   : 20px;
+    height       : 30px;
+    margin-left  : 3px;
+    margin-right : 3px;
+}
+
+.CanvasNavigationButton {
+    width        : 40px;
+    height       : 40px;
+    font-weight  : bold;
+    font-size    : 110%;
+}
+
+.EngineOutput {
+    width       : 640px;
+    height      : 24px;
+    font-size   : 115%;
+    font-family : "Courier New", Courier, Serif
+}
+
+.CopyEngineOutputButton {
+    height      : 30px;
+}
+
+.CopySuccessAlert {
+    background-color: #23ff24;
+    border: 1px solid black;
+    color: black;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.ContentNameLabel {
+    width: 135px;
+    height: 28px;
+    color: black;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+
+.DataTableRow:hover {
+    background-color : #feeaad;
+}
+
+#ajaxLoading {
+    background-color: #44ffd1;
+    border: 1px solid black;
+    color: black;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    box-shadow: 0 2px 2px  #d1d1d1;
+
+    z-index: 1000;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+}

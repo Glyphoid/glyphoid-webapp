@@ -1,0 +1,10 @@
+.idea/
+*.iml
+*.iws
+
+log/
+target/
+
+*~
+
+plato-security.xml

@@ -1,0 +1,304 @@
+DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Glyphoid: Handwritten Formula Parser and Calculator</title>
+
+    <link rel="stylesheet" type="text/css" href="css/lib/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css">
+
+    <link rel="stylesheet" type="text/css" href="css/plato.css">
+    <link rel="stylesheet" type="text/css" href="css/main-dev.css">
+
+    <link rel="shortcut icon" href="res/images/favicon.ico" />
+
+    <script src="js/libs/jquery-1.11.3.min.js"></script>
+    <script src="js/libs/bootstrap-3.3.5.min.js"></script>
+    <script src="js/libs/bootstrap-3.3.5.min.js"></script>
+
+    <script type="text/javascript" src="js/libs/aws/aws-sdk.min.js"></script>
+
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
+    <!--<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>-->
+</head>
+
+<body>
+
+<div id="ajaxLoading">
+    Processing... Please wait.
+</div>
+
+<table>
+    <tr>
+        <td style="width: 320px; vertical-align: top; border: 1px solid black;">
+            <div id="devPanel">
+                <div class="devControls" class="top">
+                    <nav id="nav">
+                        <ul>
+                            <li>Access Key:<input id="awsAccessKey" value="" /></li>
+                            <li>Secret Key:<input id="awsSecretKey" type="password" value="" /></li>
+                            <li>Region:<input id="awsRegion" value="us-east-1"/></li>
+                            <li>Date Prefix:<input id="datePrefix" type="date"/></li>
+                            <li>Client type:<input id="clientType" value="DesktopBrowser"/></li>
+
+
+                            <li><button type="submit" id="getSessions">Get sessions</button></li><br/>
+                            <li><button type="submit" id="sortSessions">Sort sessions</button></li><br/>
+
+                            <li>Save directory:<input id="saveDirectory" value=""/></li>
+                            <li><button type="submit" id="saveTokenToFile">Save token to file</button></li>
+                        </ul>
+                    </nav>
+                </div>
+
+                <hr/>
+                <div>
+                    <ul id="actionList" style="width: 300px; height: 400px; overflow: auto">
+
+                    </ul>
+                </div>
+
+                <hr/>
+                <div>
+                    <ul id="sessionList" style="width: 300px; height: 400px; overflow: auto">
+
+                    </ul>
+                </div>
+
+            </div>
+        </td>
+
+        <td style="vertical-align: top;">
+        <table>
+            <tr>
+                <td></td>
+                <td style="text-align:center">
+
+                <td></td>
+            </tr>
+            <tr>
+                <td>
+                    <canvas id="gestureCanvas" width="680" height="420" style="border:1px solid #000000"></canvas>
+                </td>
+                <td style="vertical-align: top">
+                    <button class="CanvasNavigationButton" id="zoomIn">
+                        <img src="res/images/data-zoom-in-icon_48x48.png">
+                    </button>
+                    <br/>
+                    <button class="CanvasNavigationButton" id="zoomOut">
+                        <img src="res/images/data-zoom-out-icon_48x48.png">
+                    </button>
+                    <br/>
+                    <br/>
+
+                    <table>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button class="btn CanvasNavigationButton" id="moveUp">&uarr;</button>
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button class="btn CanvasNavigationButton" id="moveLeft">&larr;</button>
+                            </td>
+                            <td></td>
+                            <td>
+                                <button class="btn CanvasNavigationButton" id="moveRight">&rarr;</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button class="btn CanvasNavigationButton" id="moveDown">&darr;</button>
+                            </td>
+                            <td></td>
+                        </tr>
+                    </table>
+
+                    <br/>
+                    <button class="btn CanvasNavigationButton" id="cursorSelect"><img width="40px" heigth="40px" src="res/images/Cursor-Select-512.png"></button>
+
+                    <br/>
+                    <br/>
+                    <br/>
+                    <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                        <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc">Demo Videos</a>
+                    </button>
+                    <br/>
+                    <br/>
+                    <button type="button" class="btn btn-link" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
+                        <a href="https://www.surveymonkey.com/r/2WBL8XX">Provide feedback</a>
+                    </button>
+                </td>
+            </tr>
+        </table>
+
+
+        <div class="dropdown">
+            <img src="res/images/glyphoid_32x32.ico" />
+
+            <button class="btn btn-default CommandButton" id="parseTokenSet" class="funcButton">Parse</button>
+            <button class="btn btn-default CommandButton" id="removeLastToken" class="funcButton">Delete</button>
+            <button class="btn btn-default CommandButton" id="clearPaths" class="funcButton">Clear</button>
+
+            <!-- style="margin-right:0px; border-bottom-right-radius:0px; border-top-right-radius:0px; border-right:none;" -->
+            <!-- style="margin-left:0px; border-bottom-left-radius:0px; border-top-left-radius:0px; border-left:none;" -->
+            <button class="btn btn-default CommandButton" id="mergeLast2Strokes" class="funcButton">Merge</button>
+
+            <button class="btn btn-default dropdown-toggle" type="button" id="mergeStrokesDropdown" data-toggle="dropdown">
+                <span class="caret"></span>
+            </button>
+
+            <ul stye="margin-left:200px;" class="dropdown-menu" role="menu" aria-labelledby="mergeStrokesDropdown">
+                <li role="presentation"><a id="mergeLast2StrokesAlt" role="menuitem" tabindex="-1" href="#">Merge 2 strokes</a></li>
+                <li role="presentation"><a id="mergeLast3Strokes" role="menuitem" tabindex="-1" href="#">Merge 3 strokes</a></li>
+                <li role="presentation"><a id="mergeLast4Strokes" role="menuitem" tabindex="-1" href="#">Merge 4 strokes</a></li>
+            </ul>
+
+            <button class="btn btn-default CommandButton" id="unmergeLastToken" class="funcButton">Unmerge</button>
+
+            <button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
+            <button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
+
+        </div>
+
+
+        <table>
+            <tr>
+                <td style="padding-top:6px; padding-bottom:6px">
+                    <img src="res/images/blank_32x32.png" />
+                    <button class="btn btn-default CommandButton" id="setToken" class="funcButton">Set token…</span></button>
+                    <!--<div style="padding-top:6px; padding-bottom:6px">Token candidates: </div>-->
+                </td>
+                <td style="padding-top:6px; padding-bottom:6px">
+                    <div id="tokenRecogCands">
+
+                    </div>
+                </td>
+        </td>
+    </tr>
+</table>
+
+<ul class="nav nav-tabs">
+    <li class="active"><a data-toggle="pill" href="#parseEvalTab">Parsing + Evaluation</a></li>
+    <li><a data-toggle="pill" href="#mathTexTab">Math TeX</a></li>
+    <li><a data-toggle="pill" href="#mathMLTab" id="mathMLTabIndex">MathML</a></li>
+    <li><a data-toggle="pill" href="#generatedImageTab" id="generatedImageTabIndex">Image</a></li>
+</ul>
+
+<div class="tab-content">
+    <div id="parseEvalTab" class="tab-pane fade in active">
+        <table>
+            <tr class="DataTableRow">
+                <td>
+                    <div class="ContentNameLabel">
+                        Parser output:
+                    </div>
+                </td>
+                <td>
+                    <input id="parserOutput" class="EngineOutput" />
+                </td>
+            </tr>
+            <tr class="DataTableRow">
+                <td>
+                    <div  class="ContentNameLabel">
+                        Evaluator output:
+                    </div>
+                </td>
+                <td>
+                    <input id="evaluatorOutput" class="EngineOutput" />
+                </td>
+            </tr>
+            <tr class="DataTableRow">
+                <td>
+                    <div  class="ContentNameLabel">
+                        Elapsed time:
+                    </div>
+                </td>
+                <td>
+                    <input id="parsingEvaluationElapsedTime" class="EngineOutput" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="mathTexTab" class="tab-pane fade">
+        <table>
+            <tr class="DataTableRow">
+                <td>
+                    <div  class="ContentNameLabel">
+                        Math TeX:
+                    </div>
+                </td>
+                <td>
+                    <input id="mathTex" class="EngineOutput" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="mathMLTab" class="tab-pane fade">
+        <table>
+            <tr class="DataTableRow">
+                <td>
+                    <div  class="ContentNameLabel">
+                        MathML:
+                    </div>
+                </td>
+                <td>
+                    <textarea id="mathML" cols="50" rows="5" style="height:100px;font-size:90%;" class="EngineOutput"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="generatedImageTab" class="tab-pane fade">
+        <img id="generatedImage" />
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    function isMobileBrowser() {
+        var check = false;
+        (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
+        return check;
+    }
+
+    function isMsie() {
+        var ua = window.navigator.userAgent;
+        var msie = ua.indexOf("MSIE ");
+
+        if (msie > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./))      // If Internet Explorer, return version number
+            return true;
+        else {
+            return false;
+        }                // If another browser, return 0
+    }
+
+    if (isMobileBrowser()) {
+        window.location = "mobile.html";
+    } else if (isMsie()) {
+        window.location = "IE_unsupported.html";
+    }
+</script>
+
+<script data-main="js/plato-web-app" src="js/libs/require-2.1.16.js"></script>
+
+<div id="allTokens" class="modal fade hide" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+        </div>
+    </div>
+</div>
+</tr>
+</table>
+
+
+</body>
+</html>
