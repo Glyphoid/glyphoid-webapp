@@ -48,6 +48,12 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
         };
 
         var mathJaxClient = new MathJaxClient();
+
+        // Parsing history
+        var parsingHistory = {
+            history : []
+        };
+
 //        mathJaxClient.tex2mml("\\frac{1}{3}",
 //        );
 
@@ -161,38 +167,77 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
             redoStrokeCuratorUserAction();
         });
 
+        var parserEvaluatorOutputTemplate = _.template(
+            "<tr class='platoTableMostRecentRow'>" +
+                "<td><%= index %></td>" +  // TODO: Number ID
+                "<td><%= stringizerOutput %></td>" +
+                "<td><%= mathTex %></td>" +
+                "<td id='mathML_id'><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img id='generatedImage_id' src='res/images/ajax-loader.gif'/></td>" +
+                "<td><%= evaluatorOutput %></td>" +
+                "<td><%= elapsedTimeMillis %></td>" +
+            "</tr>");
+
+        var parserEvaluatorOutputPendingTemplate = _.template(
+            "<tr id='parserEvaluatorOutputPendingRow' class='platoTableMostRecentRow'>" +
+                "<td></td>" +  // TODO: Number ID
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+                "<td><img src='res/images/ajax-loader.gif'/></td>" +
+            "</tr>");
+
         $("#parseTokenSet").on("click", function(e) {
             e.preventDefault();
+
+            $("#parseEvalResultTableHeader").after(parserEvaluatorOutputPendingTemplate);
 
             gestureManager.parseTokenSet(
                 function(parseResult, elapsedMillis) { /* Callback for parsing success */
                     parseResults.push(parseResult);
 
-                    $("#parserOutput").val(parseResult.stringizerOutput);
-                    $("#parserOutput").stop().animate({color: '#000000'}, 1);
+                    parseResult.index = parsingHistory.history.length + 1; // 1-based
+                    parseResult.elapsedTimeMillis = elapsedMillis < 1000 ?
+                        "" + elapsedMillis + " ms" :
+                        "" + elapsedMillis / 1000 + " s";
 
-                    $("#evaluatorOutput").val(parseResult.evaluatorOutput);
+                    // Save the parsing result to the record
+                    parsingHistory.history.push(parseResult);
 
-                        $("#parsingEvaluationElapsedTime").val(elapsedMillis < 1000 ?
-                            "" + elapsedMillis + " ms" :
-                            "" + elapsedMillis / 1000 + " s");
+                    var newResultRow = parserEvaluatorOutputTemplate(parseResult);
 
-                    $("#mathTex").val(parseResult.mathTex);
-                    $("#parseElapsedTime").html("Elapsed time: " + elapsedMillis.toString() + " ms");
+                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row
+                    $("#parseEvalResultTable tr").removeClass("platoTableMostRecentRow"); // Remove most-recent-row class from all existing rows
+                    $("#parseEvalResultTableHeader").after(newResultRow); // Add new result row
 
-                    if (isMathMLTabActive()) {
-                        getMathML();
-                    }
+                    var mathMLElemId = "mathML_" + parseResult.index;
+                    $("#mathML_id").attr("id", mathMLElemId);
+                    var mathMLElem = $("#" + mathMLElemId);
 
-                    if (isGeneratedImageActive()) {
-                        getGeneratedImage();
-                    }
+                    var generatedImageElemId = "generatedImage_" + parseResult.index;
+                    $("#generatedImage_id").attr("id", generatedImageElemId);
+                    var generatedImageElem = $("#" + generatedImageElemId);
+
+                    // Submit AJAX call to ML conversion service
+                    getMathML(function(conversionResult) {
+                        mathMLElem.text(conversionResult);
+                        console.log("In tex2mml success callback: ", conversionResult);
+                    });
+
+                    // Submit AJAX call to image generation service
+                    getGeneratedImage(function(conversionResult) {
+                        generatedImageElem.attr("src", "data:image/png;base64," + conversionResult);
+                    });
 
                 },
                 function(errMsg) {  /* Callback for parsing failure */
                     $("#parserOutput").val(errMsg);
                     $("#evaluatorOutput").val(errMsg);
                     $("#mathTex").val(errMsg);
+
+                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row when timed out
 
                     console.error("Parsing failed: " + errMsg);
                 }
@@ -228,37 +273,33 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
             return classes.indexOf("active") !== -1;
         };
 
-
-        var getMathML = function() {
-            $("#mathML").val("");
-
+        var getMathML = function(successCallback, errorCallback) {
             if (parseResults.length > 0) {
                 mathJaxClient.tex2mml(parseResults[parseResults.length - 1].mathTex,
                     function(responseJSON) {
-                        $("#mathML").val(responseJSON.conversionResult);
-                        console.log("In tex2mml success callback: ", responseJSON);
+                        successCallback(responseJSON.conversionResult);
                     },
                     function() {
-
+                        errorCallback();
                     });
 
+                hideSpinner(); // Hide the main spinner during MathML conversion
             }
         };
 
-        var getGeneratedImage = function() {
+        var getGeneratedImage = function(successCallback, errorCallback) {
             if (parseResults.length > 0) {
                 mathJaxClient.tex2png(parseResults[parseResults.length - 1].mathTex,
                     function(responseJSON) {
-//                        $("#mathML").val(responseJSON.conversionResult);
                         console.log("In tex2mml success callback: ", responseJSON);
 
-                        $("#generatedImage").attr("src", "data:image/png;base64," + responseJSON.conversionResult);
-
+                        successCallback(responseJSON.conversionResult);
                     },
                     function() {
-
+                        errorCallback(); //TODO
                     });
 
+                hideSpinner(); // Hide the main spinner during image generation
             }
         };
 

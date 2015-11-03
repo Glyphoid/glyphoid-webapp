@@ -10,6 +10,7 @@
     <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css">
 
     <link rel="stylesheet" type="text/css" href="css/plato.css">
+    <link rel="stylesheet" type="text/css" href="css/plato-table.css">
 
     <link rel="shortcut icon" href="res/images/favicon.ico" />
 
@@ -25,7 +26,7 @@
 <body>
 
 <div id="ajaxLoading">
-    Processing... Please wait.
+    <img src="res/images/ajax-loader.gif" height="1em"/>&nbsp;Processing... Please wait.
 </div>
 
 <table>
@@ -142,79 +143,22 @@
 
 <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="pill" href="#parseEvalTab">Parsing + Evaluation</a></li>
-    <li><a data-toggle="pill" href="#mathTexTab">Math TeX</a></li>
-    <li><a data-toggle="pill" href="#mathMLTab" id="mathMLTabIndex">MathML</a></li>
-    <li><a data-toggle="pill" href="#generatedImageTab" id="generatedImageTabIndex">Image</a></li>
 </ul>
 
 <div class="tab-content">
     <div id="parseEvalTab" class="tab-pane fade in active">
-        <table>
-            <tr class="DataTableRow">
-                <td>
-                    <div class="ContentNameLabel">
-                        Parser output:
-                    </div>
-                </td>
-                <td>
-                    <input id="parserOutput" class="EngineOutput" />
-                </td>
+        <table class="platoTable" id="parseEvalResultTable">
+            <tr id="parseEvalResultTableHeader">
+                <th id="parserOutputNumberHeader" style="width:5%;">#</th>
+                <th id="parserOutputHeader" style="width:17%;">Parser output</th>
+                <th id="mathTexHeader" style="width:17%;">TeX</th>
+                <th id="mathMLHeader" style="width:17%;">MathML</th>
+                <th id="generatedImageHeader" style="width:17%;">Image</th>
+                <th id="evaluatorOutputHeader" style="width:17%;">Evaluator output</th>
+                <th id="Elapsed time" style="width:10%;">Time elapsed</th>
             </tr>
-            <tr class="DataTableRow">
-                <td>
-                    <div  class="ContentNameLabel">
-                        Evaluator output:
-                    </div>
-                </td>
-                <td>
-                    <input id="evaluatorOutput" class="EngineOutput" />
-                </td>
-            </tr>
-            <tr class="DataTableRow">
-                <td>
-                    <div  class="ContentNameLabel">
-                        Elapsed time:
-                    </div>
-                </td>
-                <td>
-                    <input id="parsingEvaluationElapsedTime" class="EngineOutput" />
-                </td>
-            </tr>
-        </table>
-    </div>
 
-    <div id="mathTexTab" class="tab-pane fade">
-        <table>
-            <tr class="DataTableRow">
-                <td>
-                    <div  class="ContentNameLabel">
-                        Math TeX:
-                    </div>
-                </td>
-                <td>
-                    <input id="mathTex" class="EngineOutput" />
-                </td>
-            </tr>
         </table>
-    </div>
-
-    <div id="mathMLTab" class="tab-pane fade">
-        <table>
-            <tr class="DataTableRow">
-                <td>
-                    <div  class="ContentNameLabel">
-                        MathML:
-                    </div>
-                </td>
-                <td>
-                    <textarea id="mathML" cols="50" rows="5" style="height:100px;font-size:90%;" class="EngineOutput"></textarea>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <div id="generatedImageTab" class="tab-pane fade">
-        <img id="generatedImage" />
     </div>
 
 </div>
