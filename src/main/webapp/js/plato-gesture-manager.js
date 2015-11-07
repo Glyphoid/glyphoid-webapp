@@ -579,28 +579,42 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             });
 
             $(window).on("keydown", function(event) {
-                /* Only alpha-numeric keys are processed*/
-                if ( !(event.keyCode >= 48 && event.keyCode < 91) ) {
-                    return;
+
+                if (!event.altKey && !event.ctrlKey && ! event.shiftKey && (event.keyCode >= 48 && event.keyCode < 91) ) {
+                    // Force set token name
+                    /* TODO: Arrow keys for panning and pageUp/pageDown keys for zooming */
+
+                    var key = String.fromCharCode(event.keyCode).toLowerCase();
+                    if (event.shiftKey) {
+                        key = key.toUpperCase();
+                    }
+
+                    if ((key >= '0' && key <= '9') ||
+                        (key >= 'A' && key <= 'Z') ||
+                        (key >= 'a' && key <= 'z')) {
+                        console.log("keydown event: " + key); //DEBUG
+                    }
+
+
+                    if (self.getNumTokens() > 0) {
+                        self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
+                    }
+
+                } else if (event.ctrlKey && !event.altKey && !event.shiftKey) {
+                    if (event.keyCode === 90) { // Ctrl + z
+                        // Undo
+                        if (self.canUndoStrokeCuratorUserAction()) {
+                            self.undoStrokeCuratorUserAction();
+                        }
+                    } else if (event.keyCode === 89) { // Ctrl + y
+                        // Redo
+                        if (self.canRedoStrokeCuratorUserAction()) {
+                            self.redoStrokeCuratorUserAction();
+                        }
+                    }
                 }
 
-                /* TODO: Arrow keys for panning and pageUp/pageDown keys for zooming */
 
-                var key = String.fromCharCode(event.keyCode).toLowerCase();
-                if (event.shiftKey) {
-                    key = key.toUpperCase();
-                }
-
-                if ((key >= '0' && key <= '9') ||
-                    (key >= 'A' && key <= 'Z') ||
-                    (key >= 'a' && key <= 'z')) {
-                    console.log("keydown event: " + key); //DEBUG
-                }
-
-
-                if (self.getNumTokens() > 0) {
-                    self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
-                }
             });
 
             /* Handle mouse left button / touch move event */

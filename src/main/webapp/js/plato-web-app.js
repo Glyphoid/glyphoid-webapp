@@ -484,6 +484,11 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 }
             });
 
+            $("#allTokensCancel").on("click", function(e) {
+                e.preventDefault();
+                $("#allTokens").modal("hide");
+            });
+
             gestureManager.updateUIControlState();
         });
 
