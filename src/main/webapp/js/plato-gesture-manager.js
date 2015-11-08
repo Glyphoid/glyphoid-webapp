@@ -580,7 +580,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             $(window).on("keydown", function(event) {
 
-                if (!event.altKey && !event.ctrlKey && ! event.shiftKey && (event.keyCode >= 48 && event.keyCode < 91) ) {
+                if (!event.altKey && !event.ctrlKey && (event.keyCode >= 48 && event.keyCode < 91) ) {
                     // Force set token name
                     /* TODO: Arrow keys for panning and pageUp/pageDown keys for zooming */
 
@@ -600,7 +600,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
                     }
 
-                } else if (event.ctrlKey && !event.altKey && !event.shiftKey) {
+                } else if (event.ctrlKey && !event.altKey) {
                     if (event.keyCode === 90) { // Ctrl + z
                         // Undo
                         if (self.canUndoStrokeCuratorUserAction()) {
