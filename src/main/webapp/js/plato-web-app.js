@@ -480,6 +480,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
             });
             $(window).on("keydown", function(e) {
                 if (e.keyCode === 27) {
+                    // Escape key: Cancels the all tokens (select token) dialog
                     $("#allTokens").modal("hide");
                 }
             });

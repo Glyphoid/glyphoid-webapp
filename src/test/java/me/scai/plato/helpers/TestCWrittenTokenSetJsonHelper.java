@@ -106,13 +106,13 @@ public class TestCWrittenTokenSetJsonHelper {
         assertEquals(wtSet.getNumTokens(), 1);
 
         CWrittenToken wt = wtSet.tokens.get(0);
-        assertEquals(wt.getRecogWinner(), ".");
+        assertEquals(wt.getRecogResult(), ".");
         final float [] trueBnds = {0.0f, 0.0f, 2.0f, 1.0f};
         final float [] bnds = wt.getBounds();
         assertArrayEquals(bnds, trueBnds, floatEqualTol);
         assertEquals(wt.width, 2.0, floatEqualTol);
         assertEquals(wt.height, 1.0, floatEqualTol);
-        assertEquals(wt.getRecogWinner(), ".");
+        assertEquals(wt.getRecogResult(), ".");
     }
 
     @Test

@@ -362,11 +362,12 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             /* Process the writtenTokenSet output from the back-end stroke curator and
              * marshall the data into members.
-             * Input argument: tokens: an array
-             *                 constStokes: indices of constituent strokes (an array of arrays)
-             *                 pushStack: whether strokes and other local states should be pushed on to the local state stack
+             * Input argument: tokens         : an array
+             *                 constStokes    : indices of constituent strokes (an array of arrays)
+             *                 pushStack      : whether strokes and other local states should be pushed on to the local state stack
+             *                 causedByAction : the action that causes this update (optional)
              *                 */
-            this.procWrittenTokenSet = function(tokens, constStrokes, pushLocalStateStack) {
+            this.procWrittenTokenSet = function(tokens, constStrokes, pushLocalStateStack, causedByAction) {
                 var N = tokens.length;
 
                 self.tokenNames = new Array(N);
@@ -397,7 +398,17 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 }
 
                 // Automatically select the last token
-                self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
+                var updateCursorSelectedTokenIndices = true;
+
+                // Actions that do not require resetting of the selected token indices
+                if (typeof causedByAction === "string" &&
+                    causedByAction === "forceSetTokenRecogWinner") {
+                    updateCursorSelectedTokenIndices = false;
+                }
+
+                if (updateCursorSelectedTokenIndices) {
+                    self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
+                }
             };
 
             this.getNumTokens = function() {
@@ -595,9 +606,13 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         console.log("keydown event: " + key); //DEBUG
                     }
 
-
-                    if (self.getNumTokens() > 0) {
-                        self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
+                    if (Array.isArray(self.cursorSelectedTokenIndices) && self.cursorSelectedTokenIndices.length > 0) {
+                        var setTokenIdx = self.cursorSelectedTokenIndices[0];
+                        self.forceSetTokenRecogWinner(setTokenIdx, key);
+                    } else {
+                        if (self.getNumTokens() > 0) {
+                            self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
+                        }
                     }
 
                 } else if (event.ctrlKey && !event.altKey) {
@@ -1081,14 +1096,13 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.forceSetTokenRecogWinner = function(tokenIdx, tokenName) {
                 self.hwEngAgent.forceSetTokenRecogWinner(
                     tokenIdx, tokenName,
-                    function(responseJSON, elapsedMillis) {    /* Merge action success */
-//                        console.log("Force-set-token-name action succeeded. responseJSON =", responseJSON);
+                    function(responseJSON, elapsedMillis) { /* Success callback */
 
                         self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                            responseJSON.constituentStrokes, true);
+                            responseJSON.constituentStrokes, true, "forceSetTokenRecogWinner");
                         self.redraw();
                     },
-                    function() {    /* Clear action failure */
+                    function() {    /* Failure callback */
                         console.log("Force-set-token-name action failed.");
                     }
                 );
