@@ -123,6 +123,25 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
             gestureManager.unmergeLastToken();
         };
 
+        /**
+         * Merge tokens. Used by cursor selection merge
+         * @param tokenIndices
+         */
+        var mergeStrokesByTokenIndices = function(tokenIndices) {
+            var strokeIndices = [];
+            for (var i = 0; i < tokenIndices.length; ++i) {
+                var tokenIndex = tokenIndices[i];
+
+                var strokes = gestureManager.getConstituentStrokeIndices(tokenIndex);
+
+                for (var j = 0; j < strokes.length; ++j) {
+                    strokeIndices.push(strokes[j]);
+                }
+            }
+
+            gestureManager.mergeStrokesAsToken(strokeIndices);
+        };
+
         var undoStrokeCuratorUserAction = function() {
             gestureManager.undoStrokeCuratorUserAction();
         };
@@ -134,7 +153,13 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
 
         $("#mergeLast2Strokes").on("click", function(e) {
             e.preventDefault();
-            mergeLastNStrokes(2);
+
+            if (gestureManager.cursorSelectedTokenIndices.length > 1) {
+                // When there is a non-default selection of tokens, merge those selected tokens.
+                mergeStrokesByTokenIndices(gestureManager.cursorSelectedTokenIndices);
+            } else {
+                mergeLastNStrokes(2);
+            }
         });
 
         $("#mergeLast2StrokesAlt").on("click", function(e) {

@@ -42,8 +42,6 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 enableEdgeGuard : true,      // True by default, but for dev, it needs to be set to false;
                 edgeGuardWidth  : 5
 
-//                relativeFovPanStep  : 0.05,
-//                relativeFovZoomStep : 0.05
             };
 
             this.mouseButton = {
@@ -402,7 +400,9 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                 // Actions that do not require resetting of the selected token indices
                 if (typeof causedByAction === "string" &&
-                    causedByAction === "forceSetTokenRecogWinner") {
+                    (causedByAction === "forceSetTokenRecogWinner" ||
+                     causedByAction === "undoStrokeCuratorUserAction" ||
+                     causedByAction === "redoStrokeCuratorUserAction") ) {
                     updateCursorSelectedTokenIndices = false;
                 }
 
@@ -606,14 +606,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         console.log("keydown event: " + key); //DEBUG
                     }
 
-                    if (Array.isArray(self.cursorSelectedTokenIndices) && self.cursorSelectedTokenIndices.length > 0) {
-                        var setTokenIdx = self.cursorSelectedTokenIndices[0];
-                        self.forceSetTokenRecogWinner(setTokenIdx, key);
-                    } else {
-                        if (self.getNumTokens() > 0) {
-                            self.forceSetTokenRecogWinner(self.getNumTokens() - 1, key);
-                        }
-                    }
+                    self.forceSetTokenRecogWinnerByContext(key);
 
                 } else if (event.ctrlKey && !event.altKey) {
                     if (event.keyCode === 90) { // Ctrl + z
@@ -800,14 +793,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 var nTokens = self.getNumTokens();
 
                 if (typeof nTokens === "number" && nTokens > 0) {
-                    self.hwEngAgent.forceSetTokenRecogWinner(nTokens - 1, tokenName,
-                        function(responseJSON, elapsedTime) {
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, true);
-                            self.redraw();
-                        },
-                        function(errMsg) {
-                            console.error("force-set-token-name failed");
-                        });
+                    self.forceSetTokenRecogWinnerByContext(tokenName);
                 }
 
             };
@@ -1108,6 +1094,22 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 );
             };
 
+
+            /**
+             * Set token name by context (whether there is non-default selection of tokens).
+             * Wrapper around forceSetTokenRecogWinner
+             */
+            this.forceSetTokenRecogWinnerByContext = function(tokenName) {
+                if (Array.isArray(self.cursorSelectedTokenIndices) && self.cursorSelectedTokenIndices.length > 0) {
+                    var setTokenIdx = self.cursorSelectedTokenIndices[0];
+                    self.forceSetTokenRecogWinner(setTokenIdx, tokenName);
+                } else {
+                    if (self.getNumTokens() > 0) {
+                        self.forceSetTokenRecogWinner(self.getNumTokens() - 1, tokenName);
+                    }
+                }
+            };
+
             this.getStrokeIndices = function(scenario, num) {
                 if (scenario === "last") {
                     if (num > self.strokes.length) {
@@ -1264,7 +1266,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.undoStrokeCuratorUserAction = function() {
                 self.hwEngAgent.undoStrokeCuratorUserAction(
                     function(responseJSON, elapsedMillis) {
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, false);
+                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
+                                                 false, "undoStrokeCuratorUserAction");
                         self.localStateStackUndo();
                         self.redraw();
                     },
@@ -1280,7 +1283,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.redoStrokeCuratorUserAction = function() {
                 self.hwEngAgent.redoStrokeCuratorUserAction(
                     function(responseJSON, elapsedMillis) {
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, false);
+                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
+                                                 false, "redoStrokeCuratorUserAction");
                         self.localStateStackRedo();
                         self.redraw();
                     },
