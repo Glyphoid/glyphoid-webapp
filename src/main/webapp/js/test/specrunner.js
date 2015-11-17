@@ -24,7 +24,8 @@
         "mathjax-client"           : "../mathjax-client",
         "token-display-names"      : "../token-display-names",
         "limited-stack"            : "../limited-stack",
-        "state-stack"              : "../state-stack"
+        "state-stack"              : "../state-stack",
+        "pinch-event"              : "../pinch-event"
     }
   });
 
@@ -92,7 +93,8 @@
   window.clearInterval = window.clearInterval;
 
   //// Require the spec and run suite once loaded
-  require(["test-view-port", "test-limited-stack", "test-state-stack"],
+  require(["test-view-port", "test-limited-stack", "test-state-stack",
+           "test-pinch-event"],
       function () {
         htmlReporter.initialize();
         window.jasmine.getEnv().execute();

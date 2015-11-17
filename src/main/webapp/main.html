@@ -31,10 +31,7 @@
 
 <table>
     <tr>
-        <td></td>
-        <td style="text-align:center">
-
-        <td></td>
+        <td style="text-align:center" id="glyphoidTitle">Glyphoid: </td>
     </tr>
     <tr>
         <td>
@@ -181,9 +178,10 @@
         }                // If another browser, return 0
     }
 
-    if (isMobileBrowser()) {
-        window.location = "mobile.html";
-    } else if (isMsie()) {
+//    if (isMobileBrowser()) {
+//        window.location = "mobile.html";
+
+    if (isMsie()) {
         window.location = "IE_unsupported.html";
     }
 </script>

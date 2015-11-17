@@ -1,7 +1,9 @@
 define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-port", "token-display-names", "state-stack",
+        "pinch-event",
         "dev-token-helper",
         "jquery.blockUI", "bootstrap"], /* jquery.blockUI is a plugin to jquery */
     function(_, $, sprintf, HandwritingEngineAgent, ViewPort, TokenDisplayNames, StateStack,
+             PinchEvent,
              DevTokenHelper) {
         'use strict';
 
@@ -193,6 +195,12 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.touchDown = false;
             this.pts = [];
 
+            /* Multi-touch states */
+            this.pinchMode = false;
+            this.hasBeenPinch = false;
+            this.pinchPrevPos = null;
+            this.pinchEvent = new PinchEvent();
+
             this.rightButtonStatus = null;  // Possible values: null (not engaged), "fovPan", "tokenMove"
             this.rightButtonTokenMoveIdx;   // Index to the token being moved with right mouse button
             this.origRightButtonPos = new Array(2);
@@ -309,6 +317,12 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             /* Pan with amounts specified relative to the current fov size. Calls redraw() */
             this.relativeFovPanRedraw = function(relPanX, relPanY) {
                 self.viewPort.relativeFovPan(relPanX, relPanY);
+
+                self.redraw();
+            };
+
+            this.fovPanRedraw = function(panX, panY) {
+                self.viewPort.fovPan(panX, panY);
 
                 self.redraw();
             };
@@ -560,6 +574,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             /* Mouse down / touch down event */
             this.el.on("mousedown", function(event) {
+
                 event.preventDefault();
 
                 self.currentMouseButton = event.button;
@@ -571,8 +586,43 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     handleRightButtonDown(event);
                 }
             });
-            this.el.on("touchstart", function() {
-                handleLeftButtonDown(event);
+
+            this.el.on("touchstart", function(event) {
+                var e = event;
+                if (typeof e.originalEvent === "object") {
+                    e = e.originalEvent;
+                }
+
+                if ( !self.pinchMode ) {
+                    if (e.touches.length === 2 && e.changedTouches.length === 1) {
+                        /* The second touch just commenced */
+                        self.pinchMode = true;
+                        self.hasBeenPinch = true;
+//                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "Pinch start. "); //DEBUG
+
+                        self.pinchPrevPos = [
+                            [e.touches[0].pageX, e.touches[0].pageY],
+                            [e.touches[1].pageX, e.touches[1].pageY]
+                        ];
+
+                        // Eliminate the pts accumulated prior to the pinch onset
+                        self.pts = [];
+                    }
+                }
+
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + "TS: touches.length=" + e.touches.length + ", " +
+//                                         "changedTouches.length=" + e.changedTouches.length + "; ");
+//                for (var key in e.touches[0]) {
+//                    if (e.touches[0].hasOwnProperty(key)) {
+//                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "[" + key + "]");
+//                    }
+//                }
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + ". ");
+
+                if (e.touches.length === 1) {
+                    self.hasBeenPinch = false;
+                    handleLeftButtonDown(event);
+                }
             }); /* For touch devices */
 
             /* Mouse wheel event */
@@ -753,7 +803,40 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 }
 
             });
-            this.el.on("touchmove", handleLeftButtonMove); /* For touch devices */
+            this.el.on("touchmove", function(event) {
+                var e = event;
+                if (typeof e.originalEvent === "object") {
+                    e = e.originalEvent;
+                }
+
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + "TM: touches.length=" + e.touches.length + ", " +
+//                    "changedTouches.length=" + e.changedTouches.length + "; ");
+//                for (var key in e.touches[0]) {
+//                    if (e.touches[0].hasOwnProperty(key)) {
+//                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "[" + key + "]");
+//                    }
+//                }
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + ". ");
+
+                if (self.pinchMode) {
+                    var pinchCurrPos = [
+                        [e.touches[0].pageX, e.touches[0].pageY],
+                        [e.touches[1].pageX, e.touches[1].pageY]
+                    ];
+
+                    var pinchInfo = self.pinchEvent.getMovementInfo(self.pinchPrevPos, pinchCurrPos);
+                    //$("#glyphoidTitle").html($("#glyphoidTitle").html() + "Pinch=" + JSON.stringify(pinchInfo) + ". "); //DEBUG
+                    if (pinchInfo.type === "PinchPan") {
+                        self.fovPanRedraw(-pinchInfo.panX, -pinchInfo.panY);
+                    } else if (pinchInfo.type === "PinchZoom") {
+                        self.fovZoomRedraw(-pinchInfo.zoomRatio);
+                    }
+
+                    self.pinchPrevPos = pinchCurrPos;
+                } else {
+                    handleLeftButtonMove(event);
+                }
+            }); /* For touch devices */
 
             /* Recognize a set of strokes as a token, through an AJAX call to the HTTP endpoint */
             this.recognizeToken = function(strokeIndices, successCallback) {
@@ -954,6 +1037,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             };
 
             this.el.on("mouseup", function(event) {
+
                 $.blockUI(); // Prevent too-fast actions from user
 
                 event.preventDefault();
@@ -968,10 +1052,35 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                 return false;
             });
-            this.el.on("touchend", function(event) {
-                $.blockUI();
 
-                handleLeftButtonUp(event);
+            this.el.on("touchend", function(event) {
+                var e = event;
+                if (typeof e.originalEvent === "object") {
+                    e = e.originalEvent;
+                }
+
+                if ( self.pinchMode ) {
+                    if (e.touches.length === 1 && e.changedTouches.length === 1) {
+                        /* The second touch just commenced */
+                        self.pinchMode = false;
+                        self.pinchPrevPos = null;
+//                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "Pinch end. "); //DEBUG
+                    }
+                }
+
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + "TE: touches.length=" + e.touches.length + ", " +
+//                    "changedTouches.length=" + e.changedTouches.length + "; ");
+//                for (var key in e.touches[0]) {
+//                    if (e.touches[0].hasOwnProperty(key)) {
+//                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "[" + key + "]");
+//                    }
+//                }
+//                $("#glyphoidTitle").html($("#glyphoidTitle").html() + ". ");
+
+                if ( !self.hasBeenPinch ) {
+                    $.blockUI();
+                    handleLeftButtonUp(event);
+                }
             }); /* For touch devices */
 
             this.el.on("contextmenu", function(e) {
