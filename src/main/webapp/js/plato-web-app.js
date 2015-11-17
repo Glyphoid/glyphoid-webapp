@@ -488,6 +488,20 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 $("#allTokens").modal("show");
             });
 
+            /* Help button */
+            $("#helpButton").on("click", function(e) {
+                e.preventDefault();
+
+                $("#helpInfo").modal("show");
+            });
+
+            /* Mobile Downloads button */
+            $("#mobileDownloadsButton").on("click", function(e) {
+                e.preventDefault();
+
+                $("#mobileDownloads").modal("show");
+            });
+
             /* TODO: Do not us global variables */
             window.blockCanvasScroll = false;
             $(window).on("touchstart", function(e) {
@@ -507,12 +521,26 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 if (e.keyCode === 27) {
                     // Escape key: Cancels the all tokens (select token) dialog
                     $("#allTokens").modal("hide");
+
+                    $("#helpInfo").modal("hide");
+                    $("#mobileDownloads").modal("hide");
                 }
             });
 
+            // Modal dialog close callbacks
             $("#allTokensCancel").on("click", function(e) {
                 e.preventDefault();
                 $("#allTokens").modal("hide");
+            });
+
+            $("[id^=helpInfoCancel]").on("click", function(e) {
+                e.preventDefault();
+                $("#helpInfo").modal("hide");
+            });
+
+            $("[id^=mobileDownloadsCancel]").on("click", function(e) {
+                e.preventDefault();
+                $("#mobileDownloads").modal("hide");
             });
 
             gestureManager.updateUIControlState();

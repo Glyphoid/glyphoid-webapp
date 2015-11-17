@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Glyphoid: Handwritten Formula Parser and Calculator</title>
+    <title>Glyphoid: Handwritten Formula Parser and Evaluator</title>
 
     <link rel="stylesheet" type="text/css" href="css/lib/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css">
@@ -31,7 +31,25 @@
 
 <table>
     <tr>
-        <td style="text-align:center" id="glyphoidTitle">Glyphoid: </td>
+        <td style="align: left;">
+            <span><img src="res/images/glyphoid_32x32.ico" alt="Glyphoid: Mathematical Handwriting Parser and Evaluator"/></span>
+            <span style="text-align:center; font-weight: bold" id="glyphoidTitle">Glyphoid</span>
+            <span style="padding-left: 32px"></span>
+            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                <a href="javascript:void(0)" id="helpButton">About + Help</a>
+            </button>
+            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                <a href="javascript:void(0)" id="mobileDownloadsButton">Mobile Downloads</a>
+            </button>
+            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc" target="_blank">Demo Videos</a>
+            </button>
+            <button type="button" class="btn btn-link" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
+                <a href="https://www.surveymonkey.com/r/2WBL8XX" target="_blank">Provide Feedback</a>
+            </button>
+
+        </td>
+
     </tr>
     <tr>
         <td>
@@ -80,21 +98,15 @@
             <br/>
             <br/>
             <br/>
-                <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
-                    <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc">Demo Videos</a>
-                </button>
-            <br/>
-            <br/>
-                <button type="button" class="btn btn-link" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
-                    <a href="https://www.surveymonkey.com/r/2WBL8XX">Provide feedback</a>
-                </button>
+
+
+
         </td>
     </tr>
 </table>
 
 
 <div class="dropdown">
-    <img src="res/images/glyphoid_32x32.ico" />
 
     <button class="btn btn-default CommandButton" id="parseTokenSet" class="funcButton">Parse</button>
     <button class="btn btn-default CommandButton" id="removeLastToken" class="funcButton">Delete</button>
@@ -125,9 +137,7 @@
 <table>
     <tr>
         <td style="padding-top:6px; padding-bottom:6px">
-            <img src="res/images/blank_32x32.png" />
             <button class="btn btn-default CommandButton" id="setToken" class="funcButton">Set token…</span></button>
-            <!--<div style="padding-top:6px; padding-bottom:6px">Token candidates: </div>-->
         </td>
         <td style="padding-top:6px; padding-bottom:6px">
             <div id="tokenRecogCands">
@@ -197,6 +207,68 @@
     </div>
 </div>
 
+<div style="max-height:85%; max-width:80%" id="helpInfo" class="modal fade hide pre-scrollable" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+    <div><button id="helpInfoCancel1" style="float:right;font-weight:bold;">Close</button></div>
+    <h3>Glyphoid (Browser Edition):<br/>Mathematical Handwriting Parser and Evaluator</h3>
+
+    <p>Glyphoid is <a href="https://github.com/Glyphoid" target="_blank">open-source</a> and under active development.</p>
+    <p>If you are interested in participating in the development,
+        please contact the project initiator and maintainer, <a href="http://scai.io" target="_blank">Shanqing Cai</a>.</p>
+
+    <h4>Tips</h4>
+    <h5>Inputting tokens (symbols)</h5>
+    <ul>
+        <li>Glyphoid attempts to automatically merge strokes that belong to the same multi-stroke symbol, e.g., "f", "T" and "π".
+            However, if the automatic merging is not correct, you can use the "Merge" and "Unmerge" buttons to make manual corrections. The "Merge" button merges the last two
+            strokes. If you would like to merge more than two strokes (e.g., for "E" and "H"), you can use the button with the downward
+            arrow on the right of the "Merge" button. </li>
+        <li>When you are inputting numbers and Latin letters on a computer with a keyboard, you can use keystrokes to force set token (symbol)
+            names. For example, if you press "t", you will set the last input token to "t" (assuming that no region selection is currently active).</li>
+        <li>For symbols that do not correspond to single keystrokes on US keyboards, e.g., Greek letters, you can use the "Set Token" button and the popup
+            dialog to force set token names.</li>
+    </ul>
+
+    <h5>Undo and redo</h5>
+    <ul>
+        <li>The undo/redo stack depth is currently set to 20.</li>
+        <li>In addition to the Undo and Redo buttons on the UI, you can undo and redo using the usual combo keys of Ctrl+Z and Ctrl+Y,
+            respectively.</li>
+    </ul>
+
+    <h5>Moving tokens</h5>
+    <ul>
+        <li>On a computer with a mouse, the browser edition supports moving of existing tokens. Just use the right mouse button to drag and
+            drop the individual tokens.</li>
+        <li>Moving of tokens on mobile devices is not yet supported by the browser edition.</li>
+    </ul>
+
+    <h5>Regional selection</h5>
+    <ul>
+        <li>The button <img width="20px" heigth="20px" src="res/images/Cursor-Select-512.png"> allows selection of the tokens within a
+            rectangular region. The selected tokens are marked by green bounding boxes. </li>
+        <li>Once tokens are selected, they can be deleted or merged as a whole.</li>
+    </ul>
+
+    <h5>Zooming and panning field of view</h5>
+    <ul>
+        <li>On mouse-enabled computers, you can zoom in and out the field of view of the writing area by using the mouse middle wheel and
+            pan the field of view up/down and left/right by drag and drop in blank parts of the writing area with the mouse right key.</li>
+        <li>On touch devices, the zooming can be done through two-touch pinch movements and the panning can be achieved with two-touch left-right
+            and up/down movements.</li>
+        <li>On both types of devices, the zooming and arrow buttons to the right of the writing area can be used for field-of-view zooming and panning.</li>
+    </ul>
+
+    <br/>
+    <p>(C) 2015 Shanqing Cai </p>
+
+    <div><button id="helpInfoCancel2" style="float:right;font-weight:bold;">Close</button></div>
+</div>
+
+<div id="mobileDownloads" class="modal fade hide" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" style="height:80%;">
+    <div><button id="mobileDownloadsCancel1" style="float:right;font-weight:bold;">Close</button></div>
+    <iframe style="height:95%;" src="mobile.html"/>
+    <div><button id="mobileDownloadsCancel2" style="float:right;font-weight:bold;">Close</button></div>
+</div>
 
 
 </body>
