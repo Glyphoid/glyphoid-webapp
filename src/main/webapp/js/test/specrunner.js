@@ -19,6 +19,7 @@
         "sprintf"                  : "../libs/sprintf",
         "jquery.blockUI"           : "../libs/jquery.blockUI",
         "view-port"                : "../view-port",
+        "dev-token-helper"         : "../dev-tools/dev-token-helper",
         "plato-gesture-manager"    : "../plato-gesture-manager",
         "handwriting-engine-agent" : "../handwriting-engine-agent",
         "mathjax-client"           : "../mathjax-client",
@@ -94,7 +95,7 @@
 
   //// Require the spec and run suite once loaded
   require(["test-view-port", "test-limited-stack", "test-state-stack",
-           "test-pinch-event"],
+           "test-pinch-event", "test-plato-gesture-manager"],
       function () {
         htmlReporter.initialize();
         window.jasmine.getEnv().execute();

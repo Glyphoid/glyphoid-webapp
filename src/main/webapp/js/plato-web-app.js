@@ -543,6 +543,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 $("#mobileDownloads").modal("hide");
             });
 
+
             gestureManager.updateUIControlState();
         });
 

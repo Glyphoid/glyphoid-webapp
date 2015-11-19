@@ -67,11 +67,15 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.debugLv = 0;
 
             /* Create instance of handwriting engine agent */
-            this.hwEngAgent = new HandwritingEngineAgent({
-                getSerializedStateCallback : function() {
-                    return self.getSerializedState();
-                }
-            });
+            if (typeof self.options.handwritingEngineAgent === "object" && self.options.handwritingEngineAgent !== null) {
+                this.hwEngAgent = self.options.handwritingEngineAgent;
+            } else {
+                this.hwEngAgent = new HandwritingEngineAgent({
+                    getSerializedStateCallback: function () {
+                        return self.getSerializedState();
+                    }
+                });
+            }
 
 
             /* Initialization, get new backend handwriting engine */
