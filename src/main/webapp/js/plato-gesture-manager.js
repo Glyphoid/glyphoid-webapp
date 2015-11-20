@@ -643,6 +643,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 } else if (event.button === self.mouseButton.right) {
                     handleRightButtonDown(event);
                 }
+
+                return false; // Disable context menu
             });
 
             this.el.on("touchstart", function(event) {
@@ -867,6 +869,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     handleRightButtonMove(event);
                 }
 
+                return false;
             });
             this.el.on("touchmove", function(event) {
                 var e = event;

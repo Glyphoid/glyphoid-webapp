@@ -442,14 +442,16 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
         //});
 
         /* Disable right-click context menu for canvas */
-        $("canvas").bind("contextmenu", function(e){
+        $("#gestureCanvas").bind("contextmenu", function(e){
             e.preventDefault();
             return false;
         });
+
         $("body").on("contextmenu", "img", function(e){
             e.preventDefault();
             return false;
         });
+
 
         $(window).bind("beforeunload", function() {
             gestureManager.removeEngine();

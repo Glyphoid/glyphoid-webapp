@@ -18,12 +18,13 @@
     <script src="js/libs/bootstrap-3.3.5.min.js"></script>
     <script src="js/libs/bootstrap-3.3.5.min.js"></script>
 
+    <!--<script src="js/libs/d3.v3.min.js"></script>-->
     <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
     <!--<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>-->
 </head>
 
 
-<body>
+<body oncontextmenu="return false;">
 
 <div id="ajaxLoading">
     <img src="res/images/ajax-loader.gif" height="1em"/>&nbsp;Processing... Please wait.
@@ -31,20 +32,23 @@
 
 <table>
     <tr>
-        <td style="align: left;">
+        <td style="align:left;">
             <span><img src="res/images/glyphoid_32x32.ico" alt="Glyphoid: Mathematical Handwriting Parser and Evaluator"/></span>
             <span style="text-align:center; font-weight: bold" id="glyphoidTitle">Glyphoid</span>
             <span style="padding-left: 32px"></span>
-            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
                 <a href="javascript:void(0)" id="helpButton">About + Help</a>
             </button>
-            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
                 <a href="javascript:void(0)" id="mobileDownloadsButton">Mobile Downloads</a>
             </button>
-            <button type="button" class="btn btn-link" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                <a href="https://github.com/Glyphoid/" target="_blank">Source Code</a>
+            </button>
+            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
                 <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc" target="_blank">Demo Videos</a>
             </button>
-            <button type="button" class="btn btn-link" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
+            <button type="button" class="btn btn-link btn-small" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
                 <a href="https://www.surveymonkey.com/r/2WBL8XX" target="_blank">Provide Feedback</a>
             </button>
 
@@ -219,7 +223,7 @@
     <h5>Inputting tokens (symbols)</h5>
     <ul>
         <li>Glyphoid attempts to automatically merge strokes that belong to the same multi-stroke symbol, e.g., "f", "T" and "π".
-            However, if the automatic merging is not correct, you can use the "Merge" and "Unmerge" buttons to make manual corrections. The "Merge" button merges the last two
+            However, if the automatic merging is incorrect, you can use the "Merge" and "Unmerge" buttons to make manual corrections. The "Merge" button merges the last two
             strokes. If you would like to merge more than two strokes (e.g., for "E" and "H"), you can use the button with the downward
             arrow on the right of the "Merge" button. </li>
         <li>When you are inputting numbers and Latin letters on a computer with a keyboard, you can use keystrokes to force set token (symbol)
@@ -239,6 +243,8 @@
     <ul>
         <li>On a computer with a mouse, the browser edition supports moving of existing tokens. Just use the right mouse button to drag and
             drop the individual tokens.</li>
+        <li>You can move more than one tokens at a time by performing regional selection on a number of tokens first then drag-and-drop the
+            selected tokens as a whole using the mouse right key.</li>
         <li>Moving of tokens on mobile devices is not yet supported by the browser edition.</li>
     </ul>
 
