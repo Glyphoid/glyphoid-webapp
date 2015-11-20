@@ -184,6 +184,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
 //          this.elementId = options.elementId;
             this.el = $("#" + self.options.elementId);
+            this.elLeft = this.el.offset().left;
+            this.elTop  = this.el.offset().top;
 
             this.canvasEl = document.getElementById(self.options.elementId);
 
@@ -206,10 +208,14 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.pinchEvent = new PinchEvent();
 
             this.rightButtonStatus = null;  // Possible values: null (not engaged), "fovPan", "tokenMove"
-            this.rightButtonTokenMoveIdx;   // Index to the token being moved with right mouse button
+            this.rightButtonTokenMoveIdx = null;
+            // An array of indices (with a regions selection active, the length can be > 1)
+
             this.origRightButtonPos = new Array(2);
-            this.origMovedTokenBounds;
+            this.origMovedTokenBoundsArray; // An array of array. Each element is the original bounds of a token being moved.
             this.origMovedStrokes;
+            // This is a "hashmap" of stroke positions. The key is the string representation of the token index. The value is the original stroke data.
+
             this.lastRightButtonPos = new Array(2);
 
             /* Stroke data */
@@ -289,25 +295,39 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 var strokeIndices = self.getConstituentStrokeIndices(tokenIdx);
 
                 /* Move the strokes */
+                var tokenIdxStr = "s" + String(tokenIdx);
+                var origMovedStrokes = self.origMovedStrokes[tokenIdxStr];
+
                 for (var i = 0; i < strokeIndices.length; ++i) {
                     var strokeIdx = strokeIndices[i];
 
                     for (var j = 0; j < self.strokes[strokeIdx].length; ++j) {
-                        self.strokes[strokeIdx][j][0] = self.origMovedStrokes[i][j][0] + worldDx;
-                        self.strokes[strokeIdx][j][1] = self.origMovedStrokes[i][j][1] + worldDy;
+                        self.strokes[strokeIdx][j][0] = origMovedStrokes[i][j][0] + worldDx;
+                        self.strokes[strokeIdx][j][1] = origMovedStrokes[i][j][1] + worldDy;
                     }
                 }
             };
 
             /**
              * Move token and redraw canvas
-             * @param tokenIdx
-             * @param origBounds
+             * @param tokenIndices
+             * @param origBoundsArray
              * @param worldDx
              * @param worldDy
              */
-            this.moveTokenRedraw = function(tokenIdx, origBounds, worldDx, worldDy) {
-                self.moveToken(tokenIdx, origBounds, worldDx, worldDy);
+            this.moveTokenRedraw = function(tokenIndices, origBoundsArray, worldDx, worldDy) {
+                // Input sanity checks
+                if (!Array.isArray(tokenIndices) || !Array.isArray(origBoundsArray)) {
+                    throw new Error("First two input arguments are not arrays");
+                }
+
+                if (tokenIndices.length !== origBoundsArray.length) {
+                    throw new Error("Mismatch in length between tokenIndices and origBoundsArray");
+                }
+
+                for (var i = 0; i < tokenIndices.length; ++i) { // Iterate through all the tokens that need to be moved
+                    self.moveToken(tokenIndices[i], origBoundsArray[i], worldDx, worldDy);
+                }
 
                 /* Canvas redraw */
                 self.redraw();
@@ -417,10 +437,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 var updateCursorSelectedTokenIndices = true;
 
                 // Actions that do not require resetting of the selected token indices
-                if (typeof causedByAction === "string" &&
-                    (causedByAction === "forceSetTokenRecogWinner" ||
-                     causedByAction === "undoStrokeCuratorUserAction" ||
-                     causedByAction === "redoStrokeCuratorUserAction") ) {
+                var actionsNoUpdateCursorSelection = ["forceSetTokenRecogWinner", "undoStrokeCuratorUserAction",
+                    "redoStrokeCuratorUserAction", "moveMultipleTokens"];
+
+                if (typeof causedByAction === "string" && actionsNoUpdateCursorSelection.indexOf(causedByAction) !== -1) {
                     updateCursorSelectedTokenIndices = false;
                 }
 
@@ -453,8 +473,13 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     // This occurs on certain mobile browsers during touchstart event
                     var touch = e.touches[0];
 
-                    x = touch.pageX;
-                    y = touch.pageY;
+                    if (typeof touch.offsetX === "undefined") {
+                        x = touch.pageX - self.elLeft;
+                        y = touch.pageY - self.elTop;
+                    } else {
+                        x = touch.offsetX;
+                        y = touch.offsetY;
+                    }
                 } else if (typeof e.originalEvent === "object" && typeof e.originalEvent.touches === "object") {
                     // This occurs on certain mobile browsers during touchstart and touchmove events
                     var touch = e.originalEvent.touches[0];
@@ -468,17 +493,22 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                             str += "" + fld + ", ";
                         }
 
-                        str += ", " + typeof touch.pageX + ": " + touch.pageX + ", " +
-                            typeof touch.pageY + ": " + touch.pageY;
+//                        str += ", " + typeof touch.offsetX + ": " + touch.offsetX + ", " +
+//                            typeof touch.offsetY + ": " + touch.offsetY;
 
-                        $("#eventData").val(str);
+//                        $("#eventData").val(str);
                     }
 
-                    x = touch.pageX;
-                    y = touch.pageY;
+                    if (typeof e.offsetX === "undefined") {
+                        x = touch.pageX - self.elLeft;
+                        y = touch.pageY - self.elTop;
+                    } else {
+                        x = touch.offsetX;
+                        y = touch.offsetY;
+                    }
                 } else if (typeof e.offsetX === "undefined") { /* Firefox */
-                    x = e.pageX - self.el.offset().left;
-                    y = e.pageY - self.el.offset().top;
+                    x = e.pageX - self.elLeft;
+                    y = e.pageY - self.elTop;
                 } else { /* Other browsers */
                     x = e.offsetX;
                     y = e.offsetY;
@@ -543,6 +573,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             /* Handle mouse right button down event */
             var handleRightButtonDown = function(e) {
                 var canvasCoord = self.getCanvasCoordinates(e);
+
                 var enclosingTokenIdx = self.getEnclosingTokenIndex(canvasCoord[0], canvasCoord[1]);
 
                 if (enclosingTokenIdx === -1) {  // Not within any tokens, start FOV panning
@@ -552,18 +583,41 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     self.lastRightButtonPos[1] = canvasCoord[1];
                 } else {
                     self.rightButtonStatus = "tokenMove";
-                    self.rightButtonTokenMoveIdx = enclosingTokenIdx;
 
-                    self.origMovedTokenBounds = self.tokenBounds[enclosingTokenIdx].slice();
+                    if (self.cursorSelectedTokenIndices.length > 1 &&
+                        self.cursorSelectedTokenIndices.indexOf(enclosingTokenIdx) !== -1) {
 
-                    /* Store the original strokes */
-                    var strokeIndices = self.getConstituentStrokeIndices(enclosingTokenIdx);
+                        self.rightButtonTokenMoveIdx = self.cursorSelectedTokenIndices;
 
-                    self.origMovedStrokes = [];
-                    for (var i = 0; i < strokeIndices.length; ++i) {
-                        var strokeIdx = strokeIndices[i];
+                    } else {
+                        self.rightButtonTokenMoveIdx = [enclosingTokenIdx];
+                        self.cursorSelectedTokenIndices = [self.rightButtonTokenMoveIdx];
+                    }
 
-                        self.origMovedStrokes.push(_.map(self.strokes[strokeIdx], _.clone)); // Deep copy
+                    var nMovedTokens = self.rightButtonTokenMoveIdx.length;
+                    self.origMovedTokenBoundsArray = new Array(self.rightButtonTokenMoveIdx.length);
+                    for (var k = 0; k < nMovedTokens; ++k) {
+                        var tokenIdx = self.rightButtonTokenMoveIdx[k];
+
+                        self.origMovedTokenBoundsArray[k] = self.tokenBounds[tokenIdx].slice();
+                    }
+
+
+
+                    self.origMovedStrokes = {}; // "hashmap"
+                    for (var j = 0; j < nMovedTokens; ++j) {
+                        /* Store the original strokes */
+                        var strokeIndices = self.getConstituentStrokeIndices(self.rightButtonTokenMoveIdx[j]);
+
+                        var tokenIdxStr = "s" + String(self.rightButtonTokenMoveIdx[j]);
+
+                        self.origMovedStrokes[tokenIdxStr] = [];
+
+                        for (var i = 0; i < strokeIndices.length; ++i) {
+                            var strokeIdx = strokeIndices[i];
+
+                            self.origMovedStrokes[tokenIdxStr].push(_.map(self.strokes[strokeIdx], _.clone)); // Deep copy
+                        }
                     }
 
 
@@ -604,10 +658,17 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         self.hasBeenPinch = true;
 //                        $("#glyphoidTitle").html($("#glyphoidTitle").html() + "Pinch start. "); //DEBUG
 
-                        self.pinchPrevPos = [
-                            [e.touches[0].pageX, e.touches[0].pageY],
-                            [e.touches[1].pageX, e.touches[1].pageY]
-                        ];
+                        if (typeof e.touches[0].offsetX === "undefined") {
+                            self.pinchPrevPos = [
+                                [e.touches[0].pageX - self.elLeft, e.touches[0].pageY - self.elTop],
+                                [e.touches[1].pageX - self.elLeft, e.touches[1].pageY - self.elTop]
+                            ];
+                        } else {
+                            self.pinchPrevPos = [
+                                [e.touches[0].offsetX, e.touches[0].offsetY],
+                                [e.touches[1].offsetX, e.touches[1].offsetY]
+                            ];
+                        }
 
                         // Eliminate the pts accumulated prior to the pinch onset
                         self.pts = [];
@@ -793,7 +854,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     var worldDxy = self.viewPort.canvasDisplacementVector2WorldDisplacementVector([canvasDx, canvasDy]);
 
                     // Move the token and redraw
-                    self.moveTokenRedraw(self.rightButtonTokenMoveIdx, self.origMovedTokenBounds, worldDxy[0], worldDxy[1]);
+                    self.moveTokenRedraw(self.rightButtonTokenMoveIdx, self.origMovedTokenBoundsArray, worldDxy[0], worldDxy[1]);
                 }
             };
 
@@ -823,10 +884,18 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 //                $("#glyphoidTitle").html($("#glyphoidTitle").html() + ". ");
 
                 if (self.pinchMode) {
-                    var pinchCurrPos = [
-                        [e.touches[0].pageX, e.touches[0].pageY],
-                        [e.touches[1].pageX, e.touches[1].pageY]
-                    ];
+                    var pinchCurrPos;
+                    if (typeof e.touches[0].offsetX === "undefined") {
+                        pinchCurrPos = [
+                            [e.touches[0].pageX - self.el.offset().left, e.touches[0].pageY - self.el.offset().top],
+                            [e.touches[1].pageX - self.el.offset().left, e.touches[1].pageY - self.el.offset().top]
+                        ];
+                    } else {
+                        pinchCurrPos = [
+                            [e.touches[0].offsetX, e.touches[0].offsetY],
+                            [e.touches[1].offsetX, e.touches[1].offsetY]
+                        ];
+                    }
 
                     var pinchInfo = self.pinchEvent.getMovementInfo(self.pinchPrevPos, pinchCurrPos);
                     //$("#glyphoidTitle").html($("#glyphoidTitle").html() + "Pinch=" + JSON.stringify(pinchInfo) + ". "); //DEBUG
@@ -1021,16 +1090,22 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                 if (self.rightButtonStatus === "tokenMove") {
                     /* Send move-token request to backend */
-                    self.hwEngAgent.moveToken(self.rightButtonTokenMoveIdx, self.tokenBounds[self.rightButtonTokenMoveIdx],
-                        function(responseJSON, elapsedMillis) {    /* Clear action success */
-//                            console.log("move-token succeeded. responseJSON =", responseJSON);
 
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, true);
+                    var nMovedTokens = self.rightButtonTokenMoveIdx.length;
+                    var newBoundsArray = new Array(nMovedTokens);
+                    for (var i = 0; i < nMovedTokens; ++i) {
+                        newBoundsArray[i] = self.tokenBounds[self.rightButtonTokenMoveIdx[i]];
+                    }
+
+                    self.hwEngAgent.moveMultipleTokens(self.rightButtonTokenMoveIdx, newBoundsArray,
+                        function(responseJSON, elapsedMillis) {    /* Clear action success */
+                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
+                                true, "moveMultipleTokens");
 
                             self.redraw();
                         },
                         function() {    /* Clear action failure */
-                            console.log("move-token failed.");
+                            console.log("move-multiple-tokens failed.");
                         });
                 } else {
                     $.unblockUI();

@@ -61,8 +61,8 @@ define(["jasq", "jquery"], function (jasq, $) {
         touchStartEvent.changedTouches = [];
         for (var i = 0; i < nTouches; ++i) {
             var touch = {
-                pageX: xs[i],
-                pageY: ys[i]
+                offsetX: xs[i],
+                offsetY: ys[i]
             };
 
             touchStartEvent.touches.push(touch);

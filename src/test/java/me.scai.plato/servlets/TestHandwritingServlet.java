@@ -2,6 +2,7 @@ package me.scai.plato.servlets;
 
 import com.google.gson.*;
 import me.scai.handwriting.StrokeCuratorUserAction;
+import me.scai.parsetree.MathHelper;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.Before;
@@ -411,6 +412,107 @@ public class TestHandwritingServlet {
         assertEquals(212.0f, tokenBoundsJson.get(2).getAsFloat(), floatTol);
         assertEquals(234.0f, tokenBoundsJson.get(3).getAsFloat(), floatTol);
     }
+
+    private float[] jsonArray2FloatArray(JsonArray a) {
+        float[] r = new float[a.size()];
+
+        for (int i = 0; i < a.size(); ++i) {
+            r[i] = a.get(i).getAsFloat();
+        }
+
+        return r;
+    }
+
+    @Test
+    public void testMoveMultipleTokens() {
+        /* Add 1st stroke */
+        JsonObject respObjAdd0 = addStroke(engineUuid,
+                "{\"numPoints\": 34, \"x\": [202,202,202,201,200,199,197,197,197,197,197,197,196,196,196,196,196,194,194,194,192,192,191,191,190,190,189,189,187,186,186,185,184,183], \"y\": [55,58,64,68,76,83,95,103,112,122,129,134,141,147,153,158,165,171,175,181,187,190,195,197,200,203,209,212,214,217,219,222,223,224]}");
+
+        assertEquals(respObjAdd0.get("errors").getAsJsonArray().size(), 0);
+
+        JsonObject writtenTokenSet = respObjAdd0.get("writtenTokenSet").getAsJsonObject();
+        JsonArray tokens = writtenTokenSet.get("tokens").getAsJsonArray();
+        assertEquals(tokens.size(), 1);
+        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
+
+        /* Add 2nd stroke */
+        JsonObject respObjAdd1 = addStroke(engineUuid,
+                "{\"numPoints\":26,\"x\":[205,206,207,208,211,212,215,216,219,221,224,227,231,235,241,246,248,252,257,263,268,274,281,284,286,289],\"y\":[139,139,139,139,139,139,139,139,139,139,139,139,139,139,139,139,139,139,141,142,142,143,144,144,144,144]}");
+
+        assertEquals(respObjAdd1.get("errors").getAsJsonArray().size(), 0);
+
+        writtenTokenSet = respObjAdd1.get("writtenTokenSet").getAsJsonObject();
+        tokens = writtenTokenSet.get("tokens").getAsJsonArray();
+        assertEquals(tokens.size(), 2);
+        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
+        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "-");
+
+        /* Add 3rd stroke */
+        JsonObject respObjAdd2 = addStroke(engineUuid,
+                "{\"numPoints\":22,\"x\":[283,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284,284],\"y\":[68,71,78,86,97,105,114,125,134,145,156,164,174,183,190,198,208,215,220,223,225,226]}");
+
+        assertEquals(respObjAdd2.get("errors").getAsJsonArray().size(), 0);
+
+        writtenTokenSet = respObjAdd2.get("writtenTokenSet").getAsJsonObject();
+        tokens = writtenTokenSet.get("tokens").getAsJsonArray();
+        assertEquals(tokens.size(), 2);
+        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
+        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "+");
+
+        /* Obtain the original bounds of the two tokens */
+        float[] token0Bounds = jsonArray2FloatArray(respObjAdd2.get("writtenTokenSet").getAsJsonObject()
+                .get("tokens").getAsJsonArray().get(0).getAsJsonObject().get("bounds").getAsJsonArray());
+        float[] token1Bounds = jsonArray2FloatArray(respObjAdd2.get("writtenTokenSet").getAsJsonObject()
+                .get("tokens").getAsJsonArray().get(1).getAsJsonObject().get("bounds").getAsJsonArray());
+
+        assertEquals(4, token0Bounds.length);
+        assertEquals(4, token1Bounds.length);
+
+        /* Move multiple tokens */
+        MockHttpServletRequest moveTokensReq = new MockHttpServletRequest();
+        MockHttpServletResponse moveTokensResp = new MockHttpServletResponse();
+
+        float[] token0NewBounds = MathHelper.floatArrayPlusFloat(token0Bounds, -10f);
+        float[] token1NewBounds = MathHelper.floatArrayPlusFloat(token1Bounds, 20f);
+
+        String token0NewBoundsStr = "[" + MathHelper.floatArray2String(token0NewBounds) + "]";
+        String token1newBoundsStr = "[" +MathHelper.floatArray2String(token1NewBounds) + "]";
+        String newBoundsArrayStr = "[" + token0NewBoundsStr + "," + token1newBoundsStr + "]";
+
+        String moveTokenReqBody = "{\"action\" : \"move-multiple-tokens\", \"engineUuid\": \"" + engineUuid + "\"" +
+                ", \"tokenIndices\": [0, 1], \"newBoundsArray\": " + newBoundsArrayStr + "}";
+        moveTokensReq.setContent(moveTokenReqBody.getBytes());
+
+        try {
+            hwServlet.doPost(moveTokensReq, moveTokensResp);
+        }
+        catch (IOException exc) {
+            fail(exc.getMessage());
+        }
+        catch (ServletException exc) {
+            fail(exc.getMessage());
+        }
+
+        JsonObject moveTokenRespObj = null;
+        try {
+            moveTokenRespObj = jsonParser.parse(moveTokensResp.getContentAsString()).getAsJsonObject();
+        }
+        catch (UnsupportedEncodingException exc) {
+            fail(exc.getMessage());
+        }
+
+        assertEquals(moveTokenRespObj.get("errors").getAsJsonArray().size(), 0);
+
+        float[] token0BoundsAfterMove = jsonArray2FloatArray(moveTokenRespObj.get("writtenTokenSet").getAsJsonObject()
+                .get("tokens").getAsJsonArray().get(0).getAsJsonObject().get("bounds").getAsJsonArray());
+        float[] token1BoundsAfterMove = jsonArray2FloatArray(moveTokenRespObj.get("writtenTokenSet").getAsJsonObject()
+                .get("tokens").getAsJsonArray().get(1).getAsJsonObject().get("bounds").getAsJsonArray());
+
+        assertArrayEquals(token0NewBounds, token0BoundsAfterMove, floatTol);
+        assertArrayEquals(token1NewBounds, token1BoundsAfterMove, floatTol);
+    }
+
 
     private JsonObject parseTokenSet(String engineUuid, long timeoutMillis) {
         hwServlet.setParsingTimeoutMillis(timeoutMillis);

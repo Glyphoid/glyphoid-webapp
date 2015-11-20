@@ -158,6 +158,7 @@ public class HandwritingServlet extends HttpServlet {
                                  "remove-token",
                                  "remove-last-token",
                                  "move-token",
+                                 "move-multiple-tokens",
                                  "get-token-bounds",
                                  "merge-strokes-as-token",
                                  "force-set-token-name",
@@ -311,7 +312,8 @@ public class HandwritingServlet extends HttpServlet {
                                         hwEng.removeLastToken();
 //                                hwEng.strokeCurator.removeLastToken();
 
-                                    } else if (action.equals("move-token")) {        /* Move token */
+                                    } else if (action.equals("move-token")) {        /* Move a single token */
+
                                         final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
                                         JsonArray newBoundsJson = reqObj.get("newBounds").getAsJsonArray();
 
@@ -320,14 +322,43 @@ public class HandwritingServlet extends HttpServlet {
                                             newBounds[i] = newBoundsJson.get(i).getAsFloat();
                                         }
 
-                                        logger.info("Handling move-token request: strokeIdx = " + tokenIdx +
+                                        logger.info("Handling move-single-token request: strokeIdx = " + tokenIdx +
                                                 ", newBounds.length = " + newBounds.length);
+
 
                                         try {
                                             hwEng.moveToken(tokenIdx, newBounds);
                                         } catch (HandwritingEngineException exc) {
                                             errors.add(new JsonPrimitive("Failed to move token due to: " + exc.getMessage()));
                                         }
+                                    } else if (action.equals("move-multiple-tokens")) {        /* Move multiple tokens */
+
+                                        JsonArray tokenIndices = reqObj.get("tokenIndices").getAsJsonArray();
+                                        JsonArray newBoundsArrayJson = reqObj.get("newBoundsArray").getAsJsonArray();
+
+                                        final float[][] newBoundsArray = new float[newBoundsArrayJson.size()][];
+                                        for (int j = 0; j < newBoundsArrayJson.size(); ++j) {
+                                            JsonArray newBounds = newBoundsArrayJson.get(j).getAsJsonArray();
+
+                                            newBoundsArray[j] = new float[newBounds.size()];
+                                            for (int i = 0; i < newBounds.size(); ++i) {
+                                                newBoundsArray[j][i] = newBounds.get(i).getAsFloat();
+                                            }
+                                        }
+
+                                        logger.info("Handling move-multiple-token request: strokeIndices length = " + tokenIndices.size());
+
+                                        for (int i = 0; i < tokenIndices.size(); ++i) {
+                                            int tokenIndex = tokenIndices.get(i).getAsInt();
+
+                                            try {
+                                                hwEng.moveToken(tokenIndex, newBoundsArray[i]);
+                                            } catch (HandwritingEngineException exc) {
+                                                errors.add(new JsonPrimitive("Failed to move token " + i + " of " + tokenIndices.size() +
+                                                        " due to: " + exc.getMessage()));
+                                            }
+                                        }
+
                                     } else if (action.equals("merge-strokes-as-token")) {  /* Merge strokes as token */
                                         JsonArray mergeIndicesJson = null;
                                         if (reqObj.get("strokeIndices").isJsonArray()) {

@@ -361,18 +361,18 @@ define(["jquery", "jquery.blockUI"], function($) {
 
 
         /**
-         * Move token
+         * Move a single token
          * @param   tokenIdx: token index
          * @param   newBounds: new bounds of tkoen
          * */
         this.moveToken = function(tokenIdx, newBounds, successCallback, errorCallback) {
             /* Input sanity check */
             if (typeof tokenIdx !== "number") {
-                throw "Invalid input token index"
+                throw new Error("Invalid input token index");
             }
 
             if (!Array.isArray(newBounds) || newBounds.length !== 4) {
-                throw "Invalid input new bounds"
+                throw new Error("Invalid input new bounds");
             }
 
             var additionalData = {
@@ -381,6 +381,37 @@ define(["jquery", "jquery.blockUI"], function($) {
             };
 
             var f = engineCall.bind(self, "move-token", additionalData);
+
+            f(successCallback, errorCallback);
+        };
+
+        /**
+         * Move multiple tokens
+         * @param tokenIndices
+         * @param newBoundsArray
+         * @param successCallback
+         * @param errorCallback
+         */
+        this.moveMultipleTokens = function(tokenIndices, newBoundsArray, successCallback, errorCallback) {
+            /* Input sanity check */
+            if (!Array.isArray(tokenIndices)) {
+                throw new Error("Invalid input token index array");
+            }
+
+            if (!Array.isArray(newBoundsArray)) {
+                throw new Error("Invalid input new bounds array");
+            }
+
+            if (tokenIndices.length != newBoundsArray.length) {
+                throw new Error("Length mismatch between input tokenIndices and newBoundsArray");
+            }
+
+            var additionalData = {
+                "tokenIndices"  : tokenIndices,
+                "newBoundsArray" : newBoundsArray
+            };
+
+            var f = engineCall.bind(self, "move-multiple-tokens", additionalData);
 
             f(successCallback, errorCallback);
         };
