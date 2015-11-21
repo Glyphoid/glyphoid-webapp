@@ -465,7 +465,9 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
 
 
         $(function() {
-//            $("#copyParserOutputSuccessAlert").hide();
+            if ( !window.opera ) {
+                $("body").attr("oncontextmenu", "return false;");
+            }
 
             $.unblockUI();
 

@@ -53,6 +53,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             };      // TODO: MS IE
 
             this.currentMouseButton;
+            this.hasBeenMouseDown = false;
+            this.hasBeenTouchStart = false;
 
             this.allTokens = []; /* Token names and display names */
 
@@ -632,8 +634,9 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             /* Mouse down / touch down event */
             this.el.on("mousedown", function(event) {
-
                 event.preventDefault();
+
+                self.hasBeenMouseDown = true;
 
                 self.currentMouseButton = event.button;
                 if (event.button === self.mouseButton.left) {
@@ -648,6 +651,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             });
 
             this.el.on("touchstart", function(event) {
+                self.hasBeenTouchStart = true;
+
                 var e = event;
                 if (typeof e.originalEvent === "object") {
                     e = e.originalEvent;
@@ -1119,6 +1124,11 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             };
 
             this.el.on("mouseup", function(event) {
+                if ( !self.hasBeenMouseDown ) {
+                    return;
+                }
+
+                self.hasBeenMouseDown = false;
 
                 $.blockUI(); // Prevent too-fast actions from user
 
@@ -1136,6 +1146,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             });
 
             this.el.on("touchend", function(event) {
+                if ( !self.hasBeenTouchStart ) {
+                    return;
+                }
+
                 var e = event;
                 if (typeof e.originalEvent === "object") {
                     e = e.originalEvent;
@@ -1160,6 +1174,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 //                $("#glyphoidTitle").html($("#glyphoidTitle").html() + ". ");
 
                 if ( !self.hasBeenPinch ) {
+                    self.hasBeenTouchStart = false;
+
                     $.blockUI();
                     handleLeftButtonUp(event);
                 }
