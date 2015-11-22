@@ -786,6 +786,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                          newY > self.canvasHeight - edgeGuardWidth)) {
                         console.log("Edge guard triggered");
 
+                        self.hasBeenMouseDown = false;
+                        self.hasBeenTouchStart = false;
                         handleLeftButtonUp(e);
                     }
 
