@@ -6,6 +6,7 @@ package me.scai.plato.helpers;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import me.scai.handwriting.AbstractToken;
 import me.scai.handwriting.CWrittenToken;
 import me.scai.handwriting.CWrittenTokenSet;
 import org.junit.Test;
@@ -105,7 +106,7 @@ public class TestCWrittenTokenSetJsonHelper {
 
         assertEquals(wtSet.getNumTokens(), 1);
 
-        CWrittenToken wt = wtSet.tokens.get(0);
+        AbstractToken wt = wtSet.tokens.get(0);
         assertEquals(wt.getRecogResult(), ".");
         final float [] trueBnds = {0.0f, 0.0f, 2.0f, 1.0f};
         final float [] bnds = wt.getBounds();

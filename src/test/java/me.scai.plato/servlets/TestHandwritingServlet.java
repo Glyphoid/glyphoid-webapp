@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 public class TestHandwritingServlet {
-    private static final long DEFAULT_PARSING_TIMEOUT = 30000L;
+    private static final long DEFAULT_PARSING_TIMEOUT = 10000L;
 
     private static final Gson gson = new Gson();
     private static final JsonParser jsonParser = new JsonParser();

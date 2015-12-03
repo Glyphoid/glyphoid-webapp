@@ -65,7 +65,7 @@ public class TestCWrittenTokenJsonHelper {
         assertEquals(wtJsonObj.get("bounds").getAsJsonArray().size(), 4);
 
         /* 2. Has recogWinner */
-        wt.setRecogWinner("w");
+        wt.setRecogResult("w");
         wtJson = CWrittenTokenJsonHelper.CWrittenToken2JsonNoStroke(wt);
 
         wtJsonObj = jsonParser.parse(wtJson).getAsJsonObject();

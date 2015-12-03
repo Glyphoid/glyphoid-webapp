@@ -30,6 +30,7 @@ import me.scai.plato.helpers.HandwritingEnginePool;
 import me.scai.plato.publishers.PlatoRequestPublisher;
 import me.scai.plato.publishers.PlatoRequestPublisherS3;
 import me.scai.plato.security.BypassSecurity;
+import me.scai.plato.serverutils.PropertiesHelper;
 import me.scai.utilities.WorkerClientInfo;
 import me.scai.utilities.clienttypes.ClientTypeMajor;
 import me.scai.utilities.clienttypes.ClientTypeMinor;
@@ -50,10 +51,15 @@ public class HandwritingServlet extends HttpServlet {
 
     private ScheduledExecutorService execService = Executors.newScheduledThreadPool(4); // TODO: Do not hard code
 
-    private long parsingTimeoutMillis = 30000L;
+    private long parsingTimeoutMillis;
+
 
     @Override
     public void init() throws ServletException {
+        parsingTimeoutMillis =
+                Long.parseLong(PropertiesHelper.getProperties().getProperty("handwritingEngineTimeoutMillis"));
+        logger.info("Parsing timeout = " + parsingTimeoutMillis + " ms");
+
         try {
             hwEngPool = new HandwritingEnginePool();
         } catch (IOException exc) {
