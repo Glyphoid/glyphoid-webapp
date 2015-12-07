@@ -2,6 +2,8 @@ package me.scai.plato.helpers;
 
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.scai.handwriting.*;
@@ -16,6 +18,7 @@ import me.scai.utilities.PooledWorker;
 
 public class HandwritingEngineImpl implements HandwritingEngine, PooledWorker {
     private static final JsonParser jsonParser = new JsonParser();
+    private static final Gson gson = new Gson();
 
     public StrokeCurator strokeCurator;
     public TokenSetParser tokenSetParser;
@@ -110,6 +113,8 @@ public class HandwritingEngineImpl implements HandwritingEngine, PooledWorker {
             }
 
             throw new HandwritingEngineException(msg);
+        } catch (InterruptedException exc) {
+            throw new HandwritingEngineException("Parser interrupted");
         }
 
         /* Invoke stringizer */
@@ -138,6 +143,11 @@ public class HandwritingEngineImpl implements HandwritingEngine, PooledWorker {
 
 
         return output;
+    }
+
+    @Override
+    public JsonArray getGraphicalProductions() {
+        return gson.toJsonTree(tokenSetParser.getGraphicalProductionSet().prods).getAsJsonArray();
     }
 
     @Override

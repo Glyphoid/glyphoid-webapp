@@ -38,7 +38,8 @@ import me.scai.utilities.clienttypes.ClientTypeMinor;
 public class HandwritingServlet extends HttpServlet {
     /* Constants */
     public static final String TOKEN_SET_PARSING_FAILURE_ERROR_MESSAGE = "Failed to parse token set";
-    public static final String TOKEN_SET_PARSING_FAILUE_TIMEOUT = "Parsing cancelled due to timeout";
+    public static final String TOKEN_SET_PARSING_FAILUE_TIMEOUT        = "Parsing cancelled due to timeout";
+    public static final String TOKEN_SET_PARSING_FAILUE_INTERRUPTED    = "Parsing was interrupted";
 
     private static final Logger logger = Logger.getLogger(HandwritingServlet.class.getName());
     private static final Gson gson = new Gson();
@@ -170,6 +171,7 @@ public class HandwritingServlet extends HttpServlet {
                                  "force-set-token-name",
                                  "clear",
                                  "parse-token-set",
+                                 "get-graphical-productions",
                                  "get-var-map",
                                  "inject-state",
                                  "get-last-stroke-curator-user-action",
@@ -442,7 +444,7 @@ public class HandwritingServlet extends HttpServlet {
                                         } catch (CancellationException cancelExc) {
                                             errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_TIMEOUT));
                                         } catch (InterruptedException intExc) {
-                                            errors.add(new JsonPrimitive("Parsing interrupted"));
+                                            errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_INTERRUPTED));
                                         } catch (ExecutionException execExc) {
                                             errors.add(new JsonPrimitive("Exception occurred during parsing"));
                                         }
@@ -452,6 +454,10 @@ public class HandwritingServlet extends HttpServlet {
                                         } else {
                                             outObj.add("parseResult", new JsonNull());
                                         }
+                                    } else if (action.equals("get-graphical-productions")) {
+
+                                        outObj.add("graphicalProductions", hwEng.getGraphicalProductions());
+
                                     } else if (action.equals("get-var-map")) {
                                         PlatoVarMap varMap = null;
                                         try {

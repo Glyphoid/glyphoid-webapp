@@ -1537,6 +1537,38 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 )
             };
 
+            /* Get graphical productions */
+            this.getGraphicalProductions = function(successFunc, errorFunc) {
+                /* Call to the back-end to parse the token set */
+                self.hwEngAgent.getGraphicalProductions(
+                    function(responseJSON, elapsedMillis) { /* Success in removing last token */
+
+                        if (responseJSON.errors.length === 0) {
+                            if (typeof successFunc === "function") {
+                                successFunc(responseJSON["graphicalProductions"], elapsedMillis);
+
+                            }
+                        } else {
+                            // TODO: Refactor out
+                            var allErrorMsgs = "[";
+                            for (var j = 0; j < responseJSON.errors.length; ++j) {
+                                allErrorMsgs += responseJSON.errors[j];
+                                if (j < responseJSON.errors.length - 1) {
+                                    allErrorMsgs += " | ";
+                                }
+                            }
+                            allErrorMsgs += "]";
+
+                            errorFunc(allErrorMsgs);
+                        }
+                    },
+                    function() {             /* Failure in removing last token */
+                        console.log("Getting graphical productions failed.");
+                        errorFunc("[Getting graphical productions failed]");
+                    }
+                );
+            };
+
             /* Redraw on the display, including the canvas and the UI controls */
             this.redraw = function() {
                 var ctx = self.canvasEl.getContext("2d");
@@ -1758,6 +1790,9 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 /* Constituent stroke indices */
                 /* Make deep copy */
                 state["wtConstStrokeIndices"] = _.map(self.constStrokes, _.clone);
+
+                /* Token bounds */
+                state["tokenBounds"] = _.map(self.tokenBounds, _.clone);
 
                 /* Token recognition winners (may have been force-set) */
                 state["wtRecogWinners"] = _.map(self.tokenNames, _.clone);

@@ -25,6 +25,9 @@
     -moz-box-shadow: 0 1px 2px #d1d1d1;
     -webkit-box-shadow: 0 1px 2px #d1d1d1;
     box-shadow: 0 1px 2px #d1d1d1;
+
+    text-align: left;
+    vertical-align: top;
 }
 .platoTable th {
     padding:2px 2px 2px 2px;
@@ -100,4 +103,15 @@
 
 .platoTableMostRecentRow tr:hover td {
     background: #e6ffe6;
+}
+
+.parseEvalLabelByline {
+    font-size: 85%;
+    font-weight: normal;
+}
+
+.platoGrammarTable {
+    display: block;
+    height: 500px;
+    overflow-y: scroll;
 }

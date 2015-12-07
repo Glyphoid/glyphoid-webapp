@@ -6,11 +6,13 @@
 
     <title>Glyphoid: Handwritten Math Parser and Evaluator</title>
 
-    <link rel="stylesheet" type="text/css" href="css/lib/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="css/lib/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/lib/jquery-ui.css"/>
 
-    <link rel="stylesheet" type="text/css" href="css/plato.css">
-    <link rel="stylesheet" type="text/css" href="css/plato-table.css">
+    <link rel="stylesheet" type="text/css" href="css/plato.css"/>
+    <link rel="stylesheet" type="text/css" href="css/plato-table.css"/>
+
+    <link rel="stylesheet" type="text/css" href="css/lib/vis/vis.min.css"/>
 
     <link rel="shortcut icon" href="res/images/favicon.ico" />
 
@@ -69,7 +71,9 @@
     <tr>
         <td>
             <canvas id="gestureCanvas" width="680" height="420" style="border:1px solid #000000"></canvas>
+
         </td>
+
         <td style="vertical-align: top">
             <button class="CanvasNavigationButton" id="zoomIn">
                 <img src="res/images/data-zoom-in-icon_48x48.png">
@@ -117,6 +121,7 @@
 
 
         </td>
+
     </tr>
 </table>
 
@@ -146,6 +151,7 @@
     <button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
     <button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
 
+    <button class="btn btn-default CommandButton" id="showGrammar" class="funcButton">Grammar...</button>
 </div>
 
 
@@ -165,6 +171,7 @@
 
 <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="pill" href="#parseEvalTab">Parsing + Evaluation</a></li>
+    <li><a data-toggle="pill" id="grammar" href="#grammarTab">Grammar</a></li>
 </ul>
 
 <div class="tab-content">
@@ -177,9 +184,29 @@
                 <th id="mathMLHeader" style="width:17%;">MathML</th>
                 <th id="generatedImageHeader" style="width:17%;">Image</th>
                 <th id="evaluatorOutputHeader" style="width:17%;">Evaluator output</th>
-                <th id="Elapsed time" style="width:10%;">Time elapsed</th>
+                <th id="Elapsed time" style="width:10%;">Time elapsed<br/><span class="parseEvalLabelByline">Includes network latency</span></th>
             </tr>
 
+        </table>
+    </div>
+
+    <div id="grammarTab" class="tab-pane fade in">
+        <table>
+            <tr>
+                <td style="width:40%;">
+                    <table class="platoTable platoGrammarTable" id="grammarTable">
+                        <tr id="grammarTableHeader">
+                            <th>ID</th>
+                            <th>Production name</th>
+                        </tr>
+                        <tr id="grammarTableFooter">
+                        </tr>
+                    </table>
+                </td>
+                <td style="width:60%;">
+                    <div id="grammarGraph" style="vertical-align: top">Graph to appear...</div>
+                </td>
+            </tr>
         </table>
     </div>
 

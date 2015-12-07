@@ -287,6 +287,13 @@ define(["jquery", "jquery.blockUI"], function($) {
             f(successCallback, errorCallback);
         };
 
+        /* Action: Get the grammar: graphical productions */
+        this.getGraphicalProductions = function(successCallback, errorCallback) {
+            var f = engineCall.bind(self, "get-graphical-productions", null);
+
+            f(successCallback, errorCallback);
+        };
+
         /* Action: Add stroke */
         this.addStroke = function(lastStroke, successCallback, errorCallback) {
 //            console.log("lastStroke = \"" + JSON.stringify(lastStroke) + "\""); //DEBUG

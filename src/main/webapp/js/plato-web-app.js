@@ -10,11 +10,13 @@ require.config({
         "aws-sdk"                  : "libs/aws/aws-sdk.min",
         "view-port"                : "view-port",
         "plato-gesture-manager"    : "plato-gesture-manager",
+        "plato-grammar-manager"    : "plato-grammar-manager",
         "handwriting-engine-agent" : "handwriting-engine-agent",
         "mathjax-client"           : "mathjax-client",
         "token-display-names"      : "token-display-names",
         "limited-stack"            : "limited-stack",
         "state-stack"              : "state-stack",
+        "vis"                      : "libs/vis/vis.min",
         "aws-helper"               : "aws-helper",
         "main-dev"                 : "main-dev",
         "dev-token-helper"         : "dev-tools/dev-token-helper"
@@ -29,8 +31,9 @@ require.config({
     }
 });
 
-require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-dev", "bootstrap", "jquery.blockUI"], /* jquery-mobile, jquery-ui, jquery.blockUI are plugins to jquery */
-    function($, sprintf, PlatoGestureManager, MathJaxClient, MainDev) {
+require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", "mathjax-client", "main-dev",
+         "bootstrap", "jquery.blockUI"], /* jquery-mobile, jquery-ui, jquery.blockUI are plugins to jquery */
+    function($, sprintf, PlatoGestureManager, PlatoGrammarManager, MathJaxClient, MainDev) {
         'use strict';
 
         var debugLv = 0;
@@ -76,6 +79,15 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 }
             }
         });
+
+        var gProdRowTemplate = _.template(
+                "<tr class='graphicalProductionRow'>" +
+                "<td>P<%= prodIdxOneBased %></td><td><span id=\"gProd_<%= prodIdx %>\"><%= sumString %></span><span><button style='float:right'>X</button></span></td>" +
+                "</tr>");
+
+        var grammarManager = new PlatoGrammarManager({
+            graphicalProductionRowTemplate: gProdRowTemplate
+        }, gestureManager);
 
         $("#printPaths").on("click", function(e) {
             e.preventDefault();
@@ -214,6 +226,73 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 "<td><img src='res/images/ajax-loader.gif'/></td>" +
             "</tr>");
 
+        /**
+         *
+         * @param success           boolean: whether this is a success
+         * @param successData       Object with fields: parseResult and elapsedMillis. Used iff success
+         * @param errMsg            String: error message. Used iff !success
+         */
+        var parseTokenSetCallback = function(success, successData, errMsg) {
+            var parseResult;
+            var elapsedMillis;
+
+            var timeoutMsg;
+            if (success) {
+                parseResult = successData["parseResult"];
+                elapsedMillis = successData["elapsedMillis"];
+            } else {
+                timeoutMsg = "Parsing failed: " + errMsg;
+                parseResult = {
+                    stringizerOutput : timeoutMsg,
+                    evaluatorOutput  : timeoutMsg,
+                    mathTex          : timeoutMsg
+                };
+
+                elapsedMillis = "(Timeout)";
+            }
+
+            parseResults.push(parseResult);
+
+            parseResult.index = parsingHistory.history.length + 1; // 1-based
+            parseResult.elapsedTimeMillis = elapsedMillis < 1000 ?
+                    "" + elapsedMillis + " ms" :
+                    "" + elapsedMillis / 1000 + " s";
+
+            // Save the parsing result to the record
+            parsingHistory.history.push(parseResult);
+
+            var newResultRow = parserEvaluatorOutputTemplate(parseResult);
+
+            $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row
+            $("#parseEvalResultTable tr").removeClass("platoTableMostRecentRow"); // Remove most-recent-row class from all existing rows
+            $("#parseEvalResultTableHeader").after(newResultRow); // Add new result row
+
+            var mathMLElemId = "mathML_" + parseResult.index;
+            $("#mathML_id").attr("id", mathMLElemId);
+            var mathMLElem = $("#" + mathMLElemId);
+
+                var generatedImageElemId = "generatedImage_" + parseResult.index;
+                $("#generatedImage_id").attr("id", generatedImageElemId);
+                var generatedImageElem = $("#" + generatedImageElemId);
+
+            if (success) {
+                // Submit AJAX call to ML conversion service
+                getMathML(function (conversionResult) {
+                    mathMLElem.text(conversionResult);
+                    console.log("In tex2mml success callback: ", conversionResult);
+                });
+
+                // Submit AJAX call to image generation service
+                getGeneratedImage(function (conversionResult) {
+                    generatedImageElem.attr("src", "data:image/png;base64," + conversionResult);
+                });
+
+            } else {
+                mathMLElem.html("");
+                generatedImageElem.attr("src", "");
+            }
+        };
+
         $("#parseTokenSet").on("click", function(e) {
             e.preventDefault();
 
@@ -221,67 +300,24 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
 
             gestureManager.parseTokenSet(
                 function(parseResult, elapsedMillis) { /* Callback for parsing success */
-                    parseResults.push(parseResult);
-
-                    parseResult.index = parsingHistory.history.length + 1; // 1-based
-                    parseResult.elapsedTimeMillis = elapsedMillis < 1000 ?
-                        "" + elapsedMillis + " ms" :
-                        "" + elapsedMillis / 1000 + " s";
-
-                    // Save the parsing result to the record
-                    parsingHistory.history.push(parseResult);
-
-                    var newResultRow = parserEvaluatorOutputTemplate(parseResult);
-
-                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row
-                    $("#parseEvalResultTable tr").removeClass("platoTableMostRecentRow"); // Remove most-recent-row class from all existing rows
-                    $("#parseEvalResultTableHeader").after(newResultRow); // Add new result row
-
-                    var mathMLElemId = "mathML_" + parseResult.index;
-                    $("#mathML_id").attr("id", mathMLElemId);
-                    var mathMLElem = $("#" + mathMLElemId);
-
-                    var generatedImageElemId = "generatedImage_" + parseResult.index;
-                    $("#generatedImage_id").attr("id", generatedImageElemId);
-                    var generatedImageElem = $("#" + generatedImageElemId);
-
-                    // Submit AJAX call to ML conversion service
-                    getMathML(function(conversionResult) {
-                        mathMLElem.text(conversionResult);
-                        console.log("In tex2mml success callback: ", conversionResult);
-                    });
-
-                    // Submit AJAX call to image generation service
-                    getGeneratedImage(function(conversionResult) {
-                        generatedImageElem.attr("src", "data:image/png;base64," + conversionResult);
-                    });
+                    parseTokenSetCallback(true, {
+                        "parseResult"   : parseResult,
+                        "elapsedMillis" : elapsedMillis
+                    }, null);
 
                 },
                 function(errMsg) {  /* Callback for parsing failure */
-                    $("#parserOutput").val(errMsg);
-                    $("#evaluatorOutput").val(errMsg);
-                    $("#mathTex").val(errMsg);
-
-                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row when timed out
-
-                    console.error("Parsing failed: " + errMsg);
+                    parseTokenSetCallback(false, null, errMsg);
+//                    $("#parserOutput").val(errMsg);
+//                    $("#evaluatorOutput").val(errMsg);
+//                    $("#mathTex").val(errMsg);
+//
+//                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row when timed out
+//
+//                    console.error("Parsing failed: " + errMsg);
                 }
             );
         });
-
-//        $("#copyParserOutput").on("click", function(e) {
-//            e.preventDefault();
-//
-//            if ($("#parserOutput").val().length > 0) {
-//                window.clipboardData.setData("Text", $("#parserOutput").val());
-//
-//                $("#copyParserOutputSuccessAlert").css({opacity: 1}).show();
-//                window.setTimeout(function() {
-//                    $("#copyParserOutputSuccessAlert").fadeTo(500, 0);
-//                }, 1000);
-//            }
-//
-//        });
 
         /* Math ML tab */
         var isMathMLTabActive = function() {
@@ -531,6 +567,12 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 }
             });
 
+            $("#grammar").on("click", function(e) {
+                e.preventDefault();
+
+                grammarManager.init();
+            });
+
             // Modal dialog close callbacks
             $("#allTokensCancel").on("click", function(e) {
                 e.preventDefault();
@@ -546,7 +588,6 @@ require(["jquery", "sprintf", "plato-gesture-manager", "mathjax-client", "main-d
                 e.preventDefault();
                 $("#mobileDownloads").modal("hide");
             });
-
 
             gestureManager.updateUIControlState();
         });

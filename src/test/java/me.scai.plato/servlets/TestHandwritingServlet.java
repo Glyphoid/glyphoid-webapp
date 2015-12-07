@@ -525,11 +525,9 @@ public class TestHandwritingServlet {
 
         try {
             hwServlet.doPost(getVarMapReq, getVarMapResp);
-        }
-        catch (IOException exc) {
+        } catch (IOException exc) {
             fail(exc.getMessage());
-        }
-        catch (ServletException exc) {
+        } catch (ServletException exc) {
             fail(exc.getMessage());
         }
 
@@ -999,12 +997,14 @@ public class TestHandwritingServlet {
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
         assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "-");
 
-        JsonObject respObjParseTokenSet = parseTokenSet(engineUuid, 2L); // 2 ms is a very short timeout
+        JsonObject respObjParseTokenSet = parseTokenSet(engineUuid, 0L); // 0 ms is a very short timeout!
 
         assertTrue(respObjParseTokenSet.get("errors").isJsonArray());
         JsonArray errors = respObjParseTokenSet.get("errors").getAsJsonArray();
-        assertEquals(errors.size(), 1);
+
+        assertEquals(2, errors.size());
         assertTrue(errors.get(0).getAsString().startsWith(HandwritingServlet.TOKEN_SET_PARSING_FAILUE_TIMEOUT));
+        assertTrue(errors.get(1).getAsString().toLowerCase().contains("interrupted"));
     }
 
     @Test
@@ -1029,8 +1029,41 @@ public class TestHandwritingServlet {
 
         assertTrue(respObjParseTokenSet.get("errors").isJsonArray());
         JsonArray errors = respObjParseTokenSet.get("errors").getAsJsonArray();
-        assertEquals(errors.size(), 1);
+
+        assertEquals(2, errors.size());
         assertTrue(errors.get(0).getAsString().startsWith(HandwritingServlet.TOKEN_SET_PARSING_FAILUE_TIMEOUT));
+        assertTrue(errors.get(1).getAsString().toLowerCase().contains("interrupted"));
+    }
+
+    @Test
+    public void testGetGraphicalProductions() {
+        MockHttpServletRequest getProdsReq   = new MockHttpServletRequest();
+        MockHttpServletResponse getProdsResp = new MockHttpServletResponse();
+
+        String addStrokeReqBody = "{\"action\" : \"get-graphical-productions\", \"engineUuid\": \"" + engineUuid + "\"}";
+        getProdsReq.setContent(addStrokeReqBody.getBytes());
+
+        try {
+            hwServlet.doPost(getProdsReq, getProdsResp);
+        } catch (IOException exc) {
+            fail(exc.getMessage());
+        } catch (ServletException exc) {
+            fail(exc.getMessage());
+        }
+
+        JsonObject respObj = null;
+        try {
+            respObj = jsonParser.parse(getProdsResp.getContentAsString()).getAsJsonObject();
+        }
+        catch (UnsupportedEncodingException exc) {
+            fail(exc.getMessage());
+        }
+
+        assertEquals(0, respObj.get("errors").getAsJsonArray().size());
+
+        JsonArray gpArray = respObj.get("graphicalProductions").getAsJsonArray();
+        assertNotNull(gpArray);
+
     }
 
     @Test
