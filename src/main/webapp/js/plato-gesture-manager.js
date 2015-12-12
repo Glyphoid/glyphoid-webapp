@@ -713,22 +713,53 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             $(window).on("keydown", function(event) {
 
-                if (!event.altKey && !event.ctrlKey && (event.keyCode >= 48 && event.keyCode < 91) ) {
-                    // Force set token name
-                    /* TODO: Arrow keys for panning and pageUp/pageDown keys for zooming */
+                if (!event.altKey && !event.ctrlKey) {
+                    if (event.keyCode >= 48 && event.keyCode < 91 ||  // Alphanumeric
+                        event.keyCode === 187 || // "=/+"
+                        event.keyCode === 189 || // "-"
+                        event.keyCode === 191 || // "/"
+                        event.keyCode === 219 || // "["
+                        event.keyCode === 221) { // "]"
+                        // Force set token name
+                        /* TODO: Arrow keys for panning and pageUp/pageDown keys for zooming */
 
-                    var key = String.fromCharCode(event.keyCode).toLowerCase();
-                    if (event.shiftKey) {
-                        key = key.toUpperCase();
+                        var key;
+                        if (event.keyCode === 187) {
+                            key = "=";
+                        } else if (event.keyCode === 189) {
+                            key = "-";
+                        } else if (event.keyCode === 191) {
+                            key = "/";
+                        } else if (event.keyCode === 219) {
+                            key = "[";
+                        } else if (event.keyCode === 221) {
+                            key = "]";
+                        } else {
+                            key = String.fromCharCode(event.keyCode).toLowerCase();
+                        }
+
+                        if (event.shiftKey) {
+                            if (key === "8") {
+                                key = "*";
+                            } else if (key === "9") {
+                                key = "(";
+                            } else if (key === "0") {
+                                key = ")";
+                            } else if (key === "=") {
+                                key = "+";
+                            } else {
+                                key = key.toUpperCase();
+                            }
+                        }
+
+                        self.forceSetTokenRecogWinnerByContext(key);
+                    } else if (event.keyCode === 46) { // Delete key
+                        if (event.shiftKey) { // Shift+Delete: Remove all tokens
+                            self.clear();
+                        } else { // Only Delete key: Remove selected token(s)
+                            self.removeTokens(self.cursorSelectedTokenIndices);
+                        }
                     }
-
-                    if ((key >= '0' && key <= '9') ||
-                        (key >= 'A' && key <= 'Z') ||
-                        (key >= 'a' && key <= 'z')) {
-                        console.log("keydown event: " + key); //DEBUG
-                    }
-
-                    self.forceSetTokenRecogWinnerByContext(key);
 
                 } else if (event.ctrlKey && !event.altKey) {
                     if (event.keyCode === 90) { // Ctrl + z
