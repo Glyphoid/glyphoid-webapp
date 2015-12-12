@@ -308,13 +308,6 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 },
                 function(errMsg) {  /* Callback for parsing failure */
                     parseTokenSetCallback(false, null, errMsg);
-//                    $("#parserOutput").val(errMsg);
-//                    $("#evaluatorOutput").val(errMsg);
-//                    $("#mathTex").val(errMsg);
-//
-//                    $("#parserEvaluatorOutputPendingRow").remove();       // Removing pending row when timed out
-//
-//                    console.error("Parsing failed: " + errMsg);
                 }
             );
         });

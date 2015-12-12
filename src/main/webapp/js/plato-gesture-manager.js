@@ -759,6 +759,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         } else { // Only Delete key: Remove selected token(s)
                             self.removeTokens(self.cursorSelectedTokenIndices);
                         }
+                    } else if (event.keyCode === 13) { // Enter key: Parse. // TODO: Shift key: Incremental parsing using NodeTokens
+                        if ( !$("#parseTokenSet").prop("disabled") ) {
+                            $("#parseTokenSet").trigger("click"); //TODO: Get rid of reverse dependency on element ID.d
+                        }
                     }
 
                 } else if (event.ctrlKey && !event.altKey) {
