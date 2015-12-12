@@ -1529,6 +1529,31 @@ public class TestHandwritingServlet {
         assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
+        /* Clear all strokes, again */
+        respClear = clearStrokes(engineUuid);
+        tokens1 = respClear.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
+        assertEquals(0, tokens1.size());
+
+        /* Undo the clear, again */
+        respUndo = undoStrokeCuratorUserAction(engineUuid);
+        tokens1 = respUndo.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
+        assertEquals(3, tokens1.size());
+
+        /* Remove the last token */
+        JsonObject respRemoveToken = removeToken(engineUuid, 2);
+        tokens1 = respRemoveToken.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
+        assertEquals(2, tokens1.size());
+
+        /* Undo the remove token */
+        respUndo = undoStrokeCuratorUserAction(engineUuid);
+        tokens1 = respUndo.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
+        assertEquals(3, tokens1.size());
+
+        /* Redo the remove token */
+        respRedo = redoStrokeCuratorUserAction(engineUuid);
+        tokens1 = respRedo.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
+        assertEquals(2, tokens1.size());
+
         /* Attempt to redo should run into an error */
         respRedo = redoStrokeCuratorUserAction(engineUuid);
 

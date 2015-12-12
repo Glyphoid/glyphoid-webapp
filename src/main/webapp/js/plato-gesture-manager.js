@@ -1477,7 +1477,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     function(responseJSON, elapsedMillis) {
                         self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
                                                  false, "undoStrokeCuratorUserAction");
+                        self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
+
                         self.localStateStackUndo();
+
                         self.redraw();
                     },
                     function() {
@@ -1494,6 +1497,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     function(responseJSON, elapsedMillis) {
                         self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
                                                  false, "redoStrokeCuratorUserAction");
+                        self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
+
                         self.localStateStackRedo();
                         self.redraw();
                     },
