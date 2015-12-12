@@ -716,6 +716,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 if (!event.altKey && !event.ctrlKey) {
                     if (event.keyCode >= 48 && event.keyCode < 91 ||  // Alphanumeric
                         event.keyCode === 187 || // "=/+"
+                        event.keyCode === 188 || // ","
                         event.keyCode === 189 || // "-"
                         event.keyCode === 191 || // "/"
                         event.keyCode === 219 || // "["
@@ -726,6 +727,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         var key;
                         if (event.keyCode === 187) {
                             key = "=";
+                        } else if (event.keyCode === 188) {
+                            key = ",";
                         } else if (event.keyCode === 189) {
                             key = "-";
                         } else if (event.keyCode === 191) {
