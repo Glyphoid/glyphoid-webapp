@@ -2,6 +2,14 @@ define([], function() {
     var displayNameMap = {
         "."          : ". (dot)",
         "root"       : "√ (sqrt)",
+
+        "cbl"        : "{",
+        "cbr"        : "}",
+        "gt"         : ">",
+        "lt"         : "<",
+        "gte"        : "≥",
+        "lte"        : "≤",
+
         "tick"       : "✓ (tick)",
         "integ"      : "∫",
 
