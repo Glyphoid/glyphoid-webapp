@@ -74,6 +74,20 @@ define(["jasq", "jquery"], function (jasq, $) {
         return touchStartEvent;
     };
 
+    /**
+     * Get mock mouse event. Assume the last touch is the one that has newly touched down.
+     * @param x   An array of x coordinates
+     * @param y   An array of y coordinates
+     */
+    var getMockMouseEvent = function(mouseEventType, button, x, y) {
+        var mouseEvent = $.Event(mouseEventType);
+        mouseEvent.button = button;
+        mouseEvent.x = x;
+        mouseEvent.y = y;
+
+        return mouseEvent;
+    };
+
     describe("Tests for Plato Gesture Manager", "plato-gesture-manager", function () {
 
         it("plato-gesture-manager constructor", function (TouchManager) {
@@ -296,7 +310,48 @@ define(["jasq", "jquery"], function (jasq, $) {
             expect(tm.viewPort.scale > 1).toBe(true); // Zoomed stays
         });
 
+        // Test spec: Ctrl click should have started cursor selection
+        it("plato-gesture-manager Ctrl-click cursor select", function (TouchManager) {
+            var tm = new TouchManager(getMockTouchManagerOptions());
 
+            expect(tm.touchDown).toBe(false);
+            expect(tm.pinchMode).toBe(false);
+            expect(tm.hasBeenPinch).toBe(false);
+            expect(tm.cursorSelectMode).toBe(false);
+            expect(tm.cursorSelectBoxWorld.length).toBe(0);
+
+            var mouseDownEvent1 = getMockMouseEvent("mousedown", tm.mouseButton.left,
+                                                    [0.2 * trueCanvasW], [0.2 * trueCanvasH]);
+            mouseDownEvent1.ctrlKey = true; // Add Ctrl key to the mousedown event
+
+            // Trigger mouse down event
+            tm.el.trigger(mouseDownEvent1);
+
+            expect(tm.touchDown).toBe(true);
+            expect(tm.pinchMode).toBe(false);
+            expect(tm.hasBeenPinch).toBe(false);
+            expect(tm.cursorSelectMode).toBe(true);
+            expect(tm.cursorSelectBoxWorld.length).toBe(0);
+
+            var mouseMoveEvent1 = getMockMouseEvent("mousemove", tm.mouseButton.left,
+                [0.3 * trueCanvasW], [0.3 * trueCanvasH]);
+            mouseMoveEvent1.ctrlKey = true; // Add Ctrl key to the mousedown event
+
+            // Trigger mouse move event
+            tm.el.trigger(mouseMoveEvent1);
+
+            expect(tm.cursorSelectBoxWorld.length).toBe(4);
+
+            var mouseMoveEvent1 = getMockMouseEvent("mouseup", tm.mouseButton.left,
+                [0.3 * trueCanvasW], [0.3 * trueCanvasH]);
+            mouseMoveEvent1.ctrlKey = true; // Add Ctrl key to the mousedown event
+
+            // Trigger mouse up event
+            tm.el.trigger(mouseMoveEvent1);
+
+            expect(tm.cursorSelectMode).toBe(false);
+
+        });
 
     });
 

@@ -636,6 +636,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.el.on("mousedown", function(event) {
                 event.preventDefault();
 
+                if (event.ctrlKey && !self.cursorSelectMode) {
+                    self.toggleCursorSelectMode();
+                }
+
                 self.hasBeenMouseDown = true;
 
                 self.currentMouseButton = event.button;
