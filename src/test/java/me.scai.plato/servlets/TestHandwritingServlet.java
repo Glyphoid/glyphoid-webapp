@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHandwritingServlet {
     private static final long DEFAULT_PARSING_TIMEOUT = 10000L;
@@ -515,16 +516,38 @@ public class TestHandwritingServlet {
 
 
     private JsonObject parseTokenSet(String engineUuid, long timeoutMillis) {
+        return parseTokenSet(engineUuid, null, timeoutMillis);
+    }
+
+    private JsonObject parseTokenSubset(String engineUuid, int[] subsetTokenIndices, long timeoutMillis) {
+        return parseTokenSet(engineUuid, subsetTokenIndices, timeoutMillis);
+    }
+
+    /**
+     *
+     * @param engineUuid
+     * @param subsetTokenIndices  For full token set parsing, use null.
+     * @param timeoutMillis
+     * @return
+     */
+    private JsonObject parseTokenSet(String engineUuid, int[] subsetTokenIndices, long timeoutMillis) {
         hwServlet.setParsingTimeoutMillis(timeoutMillis);
 
-        MockHttpServletRequest getVarMapReq = new MockHttpServletRequest();
-        MockHttpServletResponse getVarMapResp = new MockHttpServletResponse();
+        MockHttpServletRequest parsingReq = new MockHttpServletRequest();
+        MockHttpServletResponse parsingResp = new MockHttpServletResponse();
 
-        String addStrokeReqBody = "{\"action\" : \"parse-token-set\", \"engineUuid\": \"" + engineUuid + "\"}";
-        getVarMapReq.setContent(addStrokeReqBody.getBytes());
+        final String reqBody;
+        if (subsetTokenIndices == null) { // Full token set parsing
+            reqBody = "{\"action\" : \"parse-token-set\", \"engineUuid\": \"" + engineUuid + "\"}";
+        } else {
+            String tokenIndicesStr = "[" + MathHelper.intArray2String(subsetTokenIndices) + "]";
+            reqBody = "{\"action\" : \"parse-token-subset\", \"engineUuid\": \"" + engineUuid +
+                               "\", \"tokenIndices\": " + tokenIndicesStr + "}";
+        }
+        parsingReq.setContent(reqBody.getBytes());
 
         try {
-            hwServlet.doPost(getVarMapReq, getVarMapResp);
+            hwServlet.doPost(parsingReq, parsingResp);
         } catch (IOException exc) {
             fail(exc.getMessage());
         } catch (ServletException exc) {
@@ -533,9 +556,8 @@ public class TestHandwritingServlet {
 
         JsonObject respObj = null;
         try {
-            respObj = jsonParser.parse(getVarMapResp.getContentAsString()).getAsJsonObject();
-        }
-        catch (UnsupportedEncodingException exc) {
+            respObj = jsonParser.parse(parsingResp.getContentAsString()).getAsJsonObject();
+        } catch (UnsupportedEncodingException exc) {
             fail(exc.getMessage());
         }
 
@@ -958,9 +980,9 @@ public class TestHandwritingServlet {
 
         JsonObject writtenTokenSet = respObjAdd1.get("writtenTokenSet").getAsJsonObject();
         JsonArray tokens = writtenTokenSet.get("tokens").getAsJsonArray();
-        assertEquals(tokens.size(), 2);
-        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
-        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "-");
+        assertEquals(2, tokens.size());
+        assertEquals("1", tokens.get(0).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("-", tokens.get(1).getAsJsonObject().get("recogWinner").getAsString());
 
         JsonObject respObjParseTokenSet = parseTokenSet(engineUuid, DEFAULT_PARSING_TIMEOUT);
 
@@ -971,7 +993,7 @@ public class TestHandwritingServlet {
     }
 
     @Test
-    public void testParsingTimeoutVeryShortTimeout() {
+    public void testTokenSubsetParsing() {
 
         /* Add 1st stroke: 1 */
         JsonObject respObjAdd0 = addStroke(engineUuid,
@@ -981,31 +1003,76 @@ public class TestHandwritingServlet {
 
         /* Add 2nd stroke: - */
         JsonObject respObjAdd1 = addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[21, 22, 23, 24, 25],\"y\":[10, 10, 10, 10, 10]}");
+                "{\"numPoints\":5,\"x\":[0, 10, 20, 30, 40],\"y\":[25, 25, 25, 25, 25]}");
+
+        /* Add 3rd stroke: 7 */
+        JsonObject respObjAdd2 = addStroke(engineUuid,
+                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+
+        /* Add 4th stroke: 2 */
+        JsonObject respObjAdd3 = addStroke(engineUuid,
+                "{\"numPoints\":6,\"x\":[15, 30, 30, 15, 15, 30],\"y\":[30, 30, 40, 40, 50, 50]}");
 
         assertEquals(respObjAdd1.get("errors").getAsJsonArray().size(), 0);
 
-        /* Add 3rd stroke: 1 */
-        JsonObject respObjAdd2 = addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[30, 30.1, 30.2, 30.3, 30.4],\"y\":[0, 5, 10, 15, 20]}");
-
-        assertEquals(respObjAdd2.get("errors").getAsJsonArray().size(), 0);
-
-        JsonObject writtenTokenSet = respObjAdd1.get("writtenTokenSet").getAsJsonObject();
+        JsonObject writtenTokenSet = respObjAdd3.get("writtenTokenSet").getAsJsonObject();
         JsonArray tokens = writtenTokenSet.get("tokens").getAsJsonArray();
-        assertEquals(tokens.size(), 2);
-        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
-        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "-");
+        assertEquals(4, tokens.size());
+        assertEquals("1", tokens.get(0).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("-", tokens.get(1).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("7", tokens.get(2).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("2", tokens.get(3).getAsJsonObject().get("recogWinner").getAsString());
 
-        JsonObject respObjParseTokenSet = parseTokenSet(engineUuid, 0L); // 0 ms is a very short timeout!
+        // First parsing: Parse only the two tokens that make up the denominator
+        JsonObject respObj0 = parseTokenSubset(engineUuid, new int[]{2, 3}, DEFAULT_PARSING_TIMEOUT);
 
-        assertTrue(respObjParseTokenSet.get("errors").isJsonArray());
-        JsonArray errors = respObjParseTokenSet.get("errors").getAsJsonArray();
+        assertNotNull(respObj0);
+        assertEquals(0, respObj0.get("errors").getAsJsonArray().size());
 
-        assertEquals(2, errors.size());
-        assertTrue(errors.get(0).getAsString().startsWith(HandwritingServlet.TOKEN_SET_PARSING_FAILUE_TIMEOUT));
-        assertTrue(errors.get(1).getAsString().toLowerCase().contains("interrupted"));
+        assertTrue(respObj0.get("parseResult").isJsonObject());
+
+        JsonObject parseResult = respObj0.get("parseResult").getAsJsonObject();
+        assertEquals("72", parseResult.get("stringizerOutput").getAsString());
+        assertEquals("72", parseResult.get("evaluatorOutput").getAsString());
+
+        assertTrue(respObj0.get("tokenSet").isJsonObject());
+        JsonObject tokenSet0 = respObj0.get("tokenSet").getAsJsonObject();
+
+        JsonArray tokens0 = tokenSet0.get("tokens").getAsJsonArray();
+        assertEquals(3, tokens0.size());
+
+        // The node token should have been put at the head of the list
+        assertTrue(tokens0.get(0).getAsJsonObject().get("node").isJsonObject());
+        assertFalse(tokens0.get(1).getAsJsonObject().has("node"));
+        assertFalse(tokens0.get(2).getAsJsonObject().has("node"));
+
+        assertTrue(respObj0.get("writtenTokenSet").isJsonObject());
+        JsonObject writtenTokenSet0 = respObj0.get("writtenTokenSet").getAsJsonObject();
+
+        tokens0 = writtenTokenSet0.get("tokens").getAsJsonArray();
+
+        assertEquals(4, tokens0.size()); // The written token set should maintain the original number of tokens
+
+        // Second parsing: Parse the entire token set, on top of the first subset parsing
+        JsonObject respObj1 = parseTokenSet(engineUuid, DEFAULT_PARSING_TIMEOUT);
+
+        assertNotNull(respObj1);
+        assertEquals(0, respObj1.get("errors").getAsJsonArray().size());
+
+        assertTrue(respObj1.get("parseResult").isJsonObject());
+
+        parseResult = respObj1.get("parseResult").getAsJsonObject();
+        assertEquals("(1 / 72)", parseResult.get("stringizerOutput").getAsString());
+
+        assertTrue(respObj1.get("writtenTokenSet").isJsonObject());
+        writtenTokenSet0 = respObj1.get("writtenTokenSet").getAsJsonObject();
+
+        tokens0 = writtenTokenSet0.get("tokens").getAsJsonArray();
+
+        assertEquals(4, tokens0.size());
+
     }
+
 
     @Test
     public void testParsingTimeoutShortTimeout() {
@@ -1130,7 +1197,7 @@ public class TestHandwritingServlet {
         JsonObject writtenTokenSet = respObjAdd0.get("writtenTokenSet").getAsJsonObject();
         JsonArray tokens = writtenTokenSet.get("tokens").getAsJsonArray();
         assertEquals(tokens.size(), 1);
-        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
+        assertEquals("V", tokens.get(0).getAsJsonObject().get("recogWinner").getAsString());
 
         /* Add 2nd and 3rd strokes: = */
         JsonObject respObjAdd1 = addStroke(engineUuid,
@@ -1144,21 +1211,21 @@ public class TestHandwritingServlet {
         writtenTokenSet = respObjAdd2.get("writtenTokenSet").getAsJsonObject();
         tokens = writtenTokenSet.get("tokens").getAsJsonArray();
         assertEquals(tokens.size(), 2);
-        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
-        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "=");
+        assertEquals("V", tokens.get(0).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("=", tokens.get(1).getAsJsonObject().get("recogWinner").getAsString());
 
         /* Add 4th strokes: c */
         JsonObject respObjAdd3 = addStroke(engineUuid,
-                "{\"numPoints\":7,\"x\":[81.2, 80, 75, 75, 75, 80, 81],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
+                "{\"numPoints\":7,\"x\":[81.2, 80, 75, 73, 75, 80, 81],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
 
         assertEquals(respObjAdd3.get("errors").getAsJsonArray().size(), 0);
 
         writtenTokenSet = respObjAdd3.get("writtenTokenSet").getAsJsonObject();
         tokens = writtenTokenSet.get("tokens").getAsJsonArray();
         assertEquals(tokens.size(), 3);
-        assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
-        assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "=");
-        assertEquals(tokens.get(2).getAsJsonObject().get("recogWinner").getAsString(), "c");
+        assertEquals("V", tokens.get(0).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("=", tokens.get(1).getAsJsonObject().get("recogWinner").getAsString());
+        assertEquals("c", tokens.get(2).getAsJsonObject().get("recogWinner").getAsString());
 
         // Issue parse-token-set request
         JsonObject respObjParseTokenSet = parseTokenSet(engineUuid, DEFAULT_PARSING_TIMEOUT);
@@ -1255,7 +1322,8 @@ public class TestHandwritingServlet {
 
     @Test
     public void testInjectState() {
-        final String stateDataString = "{\"strokes\":[{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[0,0.1,0,0.05]},{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[10,10.95,10,10.02]},{\"numPoints\":4,\"x\":[40,50,60,70],\"y\":[-10,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55,55.1,55,55.1],\"y\":[-10,0,10,20.1]}],\"strokes_un\":[{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[0,0.1,0,0.05]},{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[10,10.95,10,10.02]},{\"numPoints\":4,\"x\":[40,50,60,70],\"y\":[-10,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55,55.1,55,55.1],\"y\":[-10,0,10,20.1]}],\"tokenSet\":{\"tokens\":[{\"bounds\":[0,0,30,10.95],\"width\":30,\"height\":10.95,\"recogWinner\":\"=\",\"recogPs\":[1e-20,0.03717206171190952,1e-20,1e-20,1e-20,1e-20,0.000010561854650786842,0.0000035278105907370068,1e-20,1e-20,1e-20,1e-20,1.3384969667034057e-20,0.0008991936389510102,1e-20,2.755724716002552e-12,1e-20,1e-20,1e-20,3.103938601965561e-17,1.1529963099179122e-7,1e-20,1e-20,8.962193425021705e-20,1e-20,1.4348426466527963e-7,3.328809522406818e-8,1e-20,1e-20,7.704435584621989e-11,1e-20,0.000034926563635546904,2.3217467751344567e-15,4.2614088488749486e-10,1.8898922766241209e-19,1e-20,1e-20,1e-20,1e-20,1e-20,0.9999999915920742,1e-20,1e-20,1e-20,0.0009863091162998952,1e-20,9.671945275519683e-14,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20]},{\"bounds\":[40,-10.2,70,20.1],\"width\":30,\"height\":30.3,\"recogWinner\":\"+\"}]},\"wtConstStrokeIndices\":[[0,1],[2,3]],\"wtRecogWinners\":[\"=\",\"+\"],\"wtRecogPs\":[[1e-20,0.03717206171190952,1e-20,1e-20,1e-20,1e-20,0.000010561854650786842,0.0000035278105907370068,1e-20,1e-20,1e-20,1e-20,1.3384969667034057e-20,0.0008991936389510102,1e-20,2.755724716002552e-12,1e-20,1e-20,1e-20,3.103938601965561e-17,1.1529963099179122e-7,1e-20,1e-20,8.962193425021705e-20,1e-20,1.4348426466527963e-7,3.328809522406818e-8,1e-20,1e-20,7.704435584621989e-11,1e-20,0.000034926563635546904,2.3217467751344567e-15,4.2614088488749486e-10,1.8898922766241209e-19,1e-20,1e-20,1e-20,1e-20,1e-20,0.9999999915920742,1e-20,1e-20,1e-20,0.0009863091162998952,1e-20,9.671945275519683e-14,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20],null],\"wtRecogMaxPs\":[0.9999999915920742,1],\"strokeState\":[0,0,1,2],\"wtCtrXs\":[15,55],\"wtCtrYs\":[5.475,4.9500003],\"tokenBounds\":[[0,0,30,10.95],[40,-10.2,70,20.1]]}";
+//        final String stateDataString = "{\"strokes\":[{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[0,0.1,0,0.05]},{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[10,10.95,10,10.02]},{\"numPoints\":4,\"x\":[40,50,60,70],\"y\":[-10,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55,55.1,55,55.1],\"y\":[-10,0,10,20.1]}],\"strokes_un\":[{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[0,0.1,0,0.05]},{\"numPoints\":4,\"x\":[0,10,20,30],\"y\":[10,10.95,10,10.02]},{\"numPoints\":4,\"x\":[40,50,60,70],\"y\":[-10,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55,55.1,55,55.1],\"y\":[-10,0,10,20.1]}],\"tokenSet\":{\"tokens\":[{\"bounds\":[0,0,30,10.95],\"width\":30,\"height\":10.95,\"recogWinner\":\"=\",\"recogPs\":[1e-20,0.03717206171190952,1e-20,1e-20,1e-20,1e-20,0.000010561854650786842,0.0000035278105907370068,1e-20,1e-20,1e-20,1e-20,1.3384969667034057e-20,0.0008991936389510102,1e-20,2.755724716002552e-12,1e-20,1e-20,1e-20,3.103938601965561e-17,1.1529963099179122e-7,1e-20,1e-20,8.962193425021705e-20,1e-20,1.4348426466527963e-7,3.328809522406818e-8,1e-20,1e-20,7.704435584621989e-11,1e-20,0.000034926563635546904,2.3217467751344567e-15,4.2614088488749486e-10,1.8898922766241209e-19,1e-20,1e-20,1e-20,1e-20,1e-20,0.9999999915920742,1e-20,1e-20,1e-20,0.0009863091162998952,1e-20,9.671945275519683e-14,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20]},{\"bounds\":[40,-10.2,70,20.1],\"width\":30,\"height\":30.3,\"recogWinner\":\"+\"}]},\"wtConstStrokeIndices\":[[0,1],[2,3]],\"wtRecogWinners\":[\"=\",\"+\"],\"wtRecogPs\":[[1e-20,0.03717206171190952,1e-20,1e-20,1e-20,1e-20,0.000010561854650786842,0.0000035278105907370068,1e-20,1e-20,1e-20,1e-20,1.3384969667034057e-20,0.0008991936389510102,1e-20,2.755724716002552e-12,1e-20,1e-20,1e-20,3.103938601965561e-17,1.1529963099179122e-7,1e-20,1e-20,8.962193425021705e-20,1e-20,1.4348426466527963e-7,3.328809522406818e-8,1e-20,1e-20,7.704435584621989e-11,1e-20,0.000034926563635546904,2.3217467751344567e-15,4.2614088488749486e-10,1.8898922766241209e-19,1e-20,1e-20,1e-20,1e-20,1e-20,0.9999999915920742,1e-20,1e-20,1e-20,0.0009863091162998952,1e-20,9.671945275519683e-14,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20,1e-20],null],\"wtRecogMaxPs\":[0.9999999915920742,1],\"strokeState\":[0,0,1,2],\"wtCtrXs\":[15,55],\"wtCtrYs\":[5.475,4.9500003],\"tokenBounds\":[[0,0,30,10.95],[40,-10.2,70,20.1]]}";
+        final String stateDataString = "{\"strokes\":[{\"numPoints\":4,\"x\":[0.0,10.0,20.0,30.0],\"y\":[0.0,0.1,0.0,0.05]},{\"numPoints\":4,\"x\":[0.0,10.0,20.0,30.0],\"y\":[10.0,10.95,10.0,10.02]},{\"numPoints\":4,\"x\":[40.0,50.0,60.0,70.0],\"y\":[-10.0,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55.0,55.1,55.0,55.1],\"y\":[-10.0,0.0,10.0,20.1]}],\"strokes_un\":[{\"numPoints\":4,\"x\":[0.0,10.0,20.0,30.0],\"y\":[0.0,0.1,0.0,0.05]},{\"numPoints\":4,\"x\":[0.0,10.0,20.0,30.0],\"y\":[10.0,10.95,10.0,10.02]},{\"numPoints\":4,\"x\":[40.0,50.0,60.0,70.0],\"y\":[-10.0,-10.1,-10.2,-10.1]},{\"numPoints\":4,\"x\":[55.0,55.1,55.0,55.1],\"y\":[-10.0,0.0,10.0,20.1]}],\"tokenBounds\":[[0.0,0.0,30.0,10.95],[40.0,-10.2,70.0,20.1]],\"tokenSet\":{\"tokens\":[{\"bounds\":[0.0,0.0,30.0,10.95],\"width\":30.0,\"height\":10.95,\"recogWinner\":\"\\u003d\",\"recogPs\":[1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0796486170378275E-4,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,8.548614396284052E-16,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,3.9514225622652507E-11,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,9.84765389942582E-4,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20]},{\"bounds\":[40.0,-10.2,70.0,20.1],\"width\":30.0,\"height\":30.3,\"recogWinner\":\"+\"}]},\"wtConstStrokeIndices\":[[0,1],[2,3]],\"wtRecogWinners\":[\"\\u003d\",\"+\"],\"wtRecogPs\":[[1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0796486170378275E-4,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,8.548614396284052E-16,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,3.9514225622652507E-11,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,9.84765389942582E-4,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20,1.0E-20],null],\"wtRecogMaxPs\":[1.0,1.0],\"strokeState\":[0,0,1,2],\"wtCtrXs\":[15.0,55.0],\"wtCtrYs\":[5.475,4.9500003]}";
 
         JsonObject stateData = jsonParser.parse(stateDataString).getAsJsonObject();
 

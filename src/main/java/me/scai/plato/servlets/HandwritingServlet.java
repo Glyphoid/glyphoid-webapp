@@ -15,6 +15,7 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import com.google.gson.*;
+import me.scai.handwriting.CAbstractWrittenTokenSet;
 import me.scai.handwriting.CStroke;
 import me.scai.handwriting.CWrittenTokenSet;
 import me.scai.handwriting.StrokeCuratorUserAction;
@@ -94,8 +95,6 @@ public class HandwritingServlet extends HttpServlet {
         BufferedReader rdr = request.getReader();
         StringBuilder sb = new StringBuilder();
 
-        logger.info("In doPost"); //DEBUG
-
         String line;
         while ((line = rdr.readLine()) != null) {
             sb.append(line);
@@ -161,25 +160,32 @@ public class HandwritingServlet extends HttpServlet {
             }
         }
 
-        String [] dataActions = {"add-stroke",
-                                 "remove-token",
-                                 "remove-last-token",
-                                 "move-token",
-                                 "move-multiple-tokens",
-                                 "get-token-bounds",
-                                 "merge-strokes-as-token",
-                                 "force-set-token-name",
-                                 "clear",
-                                 "parse-token-set",
-                                 "get-graphical-productions",
-                                 "get-var-map",
-                                 "inject-state",
-                                 "get-last-stroke-curator-user-action",
-                                 "undo-stroke-curator-user-action",
-                                 "redo-stroke-curator-user-action",
-                                 "get-all-token-names"      // Get all possible token names from the hw engine
-                                }; // TODO: Replace with enums
+        // Actions that affect the state of the stroke curator and parser
+        final String[] configActions = {"get-all-token-names",
+                                        "get-graphical-productions"}; // TODO: Replace with enums
+
+        final String[] dataActions = {"add-stroke",
+                                      "remove-token",
+                                      "remove-last-token",
+                                      "move-token",
+                                      "move-multiple-tokens",
+                                      "get-token-bounds",
+                                      "get-written-token-bounds", //TODO: Implement
+                                      "merge-strokes-as-token",
+                                      "force-set-token-name",
+                                      "clear",
+                                      "parse-token-set",
+                                      "parse-token-subset",
+                                      "inject-state",
+                                      "get-last-stroke-curator-user-action",
+                                      "undo-stroke-curator-user-action",
+                                      "redo-stroke-curator-user-action",
+    //                                 "get-all-token-names"      // Get all possible token names from the hw engine
+                                        }; // TODO: Replace with enums
+
+        boolean isConfigAction = Arrays.asList(configActions).contains(action);
         boolean isDataAction = Arrays.asList(dataActions).contains(action);
+
 
         /* Write to the response */
         String engUuid = null;
@@ -265,291 +271,312 @@ public class HandwritingServlet extends HttpServlet {
                 hwEngPool.clear();
 
                 outObj.add("actionTaken", new JsonPrimitive("clear-engines"));
-            } else if (isDataAction) {
-                JsonElement engineUuidElem = reqObj.get("engineUuid");
+            } else if (action.equals("get-var-map")) {
+                HandwritingEngine hwEng = getHandwritingEngineFromRequest(reqObj, errors);
 
-                if (engineUuidElem == null) {
-                    errors.add(new JsonPrimitive("Engine UUID is not specified"));
-                } else {
-                    engUuid = engineUuidElem.getAsString();
+                PlatoVarMap varMap = null;
+                try {
+                    varMap = hwEng.getVarMap();
+                } catch (HandwritingEngineException exc) {
+                    errors.add(new JsonPrimitive("Encountered exception during getVarMap() call: " + exc.getMessage()));
+                }
 
-                    HandwritingEngineImpl hwEng = null; // TODO: Replace with HandwritingEngine and catch exceptions
+                JsonObject varMapObj = new JsonObject();
+                for (final String varName : varMap.getVarNamesSorted()) {
+                    final ValueUnion vu = varMap.getVarValue(varName);
+
+                    JsonObject vuObj = serializeValueUnion(varName, vu);
+                    varMapObj.add(varName, vuObj);
+                }
+
+                outObj.add("varMap", varMapObj);
+
+            } else if (isConfigAction) {
+                HandwritingEngine hwEng = getHandwritingEngineFromRequest(reqObj, errors);
+
+                if (hwEng != null) {
                     try {
-                        hwEng = hwEngPool.getHandwritingEngine(engUuid);
-                    } catch (IllegalArgumentException exc) {
-                        errors.add(new JsonPrimitive("Engine UUID is invalid: " + engUuid));
+                        if (action.equals("get-graphical-productions")) {
+                            outObj.add("graphicalProductions", hwEng.getGraphicalProductions());
+
+                        } else if (action.equals("get-all-token-names")) {
+                            List<String> allTokenNames = hwEng.getAllTokenNames();
+
+                            JsonElement allTokenNamesJson = gson.toJsonTree(allTokenNames);
+                            outObj.add("allTokenNames", allTokenNamesJson);
+
+                        }
+                    } catch (HandwritingEngineException e) {
+                        errors.add(new JsonPrimitive("Handwriting engine exception occurred: " + e.getMessage()));
                     }
 
-                    if (hwEng != null) {
+                }
+
+            } else if (isDataAction) {
+                HandwritingEngine hwEng = getHandwritingEngineFromRequest(reqObj, errors);
+
+                if (hwEng != null) {
+                    try {
                         synchronized (hwEng) {
 
-                            if (engUuid != null) {
-                                if (hwEngPool.engineExists(engUuid)) {
-                                    hwEngPool.updateWorkerTimestamp(engUuid); /* TODO: Refactor in */
+                            if (action.equals("add-stroke")) { /* Add stroke */
+                                String strokeJson = gson.toJson(reqObj.get("stroke"));
+                                logger.info("strokeJson = \"" + strokeJson + "\""); //DEBUG
 
-                                    if (action.equals("get-all-token-names")) {
-                                        List<String> allTokenNames = hwEng.getAllTokenNames();
+                                try {
+                                    CStroke stroke = CStrokeJsonHelper.json2CStroke(strokeJson);
 
-                                        JsonElement allTokenNamesJson = gson.toJsonTree(allTokenNames);
-                                        outObj.add("allTokenNames", allTokenNamesJson);
-
-                                    } else if (action.equals("add-stroke")) { /* Add stroke */
-                                        String strokeJson = gson.toJson(reqObj.get("stroke"));
-                                        logger.info("strokeJson = \"" + strokeJson + "\""); //DEBUG
-
-                                        try {
-                                            CStroke stroke = CStrokeJsonHelper.json2CStroke(strokeJson);
-
-                                            hwEng.addStroke(stroke);
+                                    hwEng.addStroke(stroke);
 //                                    hwEng.strokeCurator.addStroke(stroke);
-                                            logger.info("Done calling addStroke()"); //DEBUG
-                                        } catch (CStrokeJsonHelper.CStrokeJsonConversionException exc) {
-                                            errors.add(new JsonPrimitive("Failed to parse stroke data in request for action: \"" +
-                                                    action + "\", due to: " + exc.getMessage()));
-                                        }
+                                    logger.info("Done calling addStroke()"); //DEBUG
+                                } catch (CStrokeJsonHelper.CStrokeJsonConversionException exc) {
+                                    errors.add(new JsonPrimitive("Failed to parse stroke data in request for action: \"" +
+                                            action + "\", due to: " + exc.getMessage()));
+                                }
 
-                                    } else if (action.equals("remove-token")) {
-                                        int idxToken = reqObj.get("idxToken").getAsInt();
-                                        try {
-                                            hwEng.removeToken(idxToken);
-                                        } catch (HandwritingEngineException exc) {
-                                            errors.add(new JsonPrimitive(exc.getMessage()));
-                                        }
+                            } else if (action.equals("remove-token")) {
+                                int idxToken = reqObj.get("idxToken").getAsInt();
+                                try {
+                                    hwEng.removeToken(idxToken);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive(exc.getMessage()));
+                                }
 
-                                    } else if (action.equals("remove-last-token")) { /* Remove last token */
-                                        hwEng.removeLastToken();
+                            } else if (action.equals("remove-last-token")) { /* Remove last token */
+                                hwEng.removeLastToken();
 //                                hwEng.strokeCurator.removeLastToken();
 
-                                    } else if (action.equals("move-token")) {        /* Move a single token */
+                            } else if (action.equals("move-token")) {        /* Move a single token */
 
-                                        final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
-                                        JsonArray newBoundsJson = reqObj.get("newBounds").getAsJsonArray();
+                                final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
+                                JsonArray newBoundsJson = reqObj.get("newBounds").getAsJsonArray();
 
-                                        final float[] newBounds = new float[newBoundsJson.size()];
-                                        for (int i = 0; i < newBoundsJson.size(); ++i) {
-                                            newBounds[i] = newBoundsJson.get(i).getAsFloat();
-                                        }
-
-                                        logger.info("Handling move-single-token request: strokeIdx = " + tokenIdx +
-                                                ", newBounds.length = " + newBounds.length);
-
-
-                                        try {
-                                            hwEng.moveToken(tokenIdx, newBounds);
-                                        } catch (HandwritingEngineException exc) {
-                                            errors.add(new JsonPrimitive("Failed to move token due to: " + exc.getMessage()));
-                                        }
-                                    } else if (action.equals("move-multiple-tokens")) {        /* Move multiple tokens */
-
-                                        JsonArray tokenIndices = reqObj.get("tokenIndices").getAsJsonArray();
-                                        JsonArray newBoundsArrayJson = reqObj.get("newBoundsArray").getAsJsonArray();
-
-                                        final float[][] newBoundsArray = new float[newBoundsArrayJson.size()][];
-                                        for (int j = 0; j < newBoundsArrayJson.size(); ++j) {
-                                            JsonArray newBounds = newBoundsArrayJson.get(j).getAsJsonArray();
-
-                                            newBoundsArray[j] = new float[newBounds.size()];
-                                            for (int i = 0; i < newBounds.size(); ++i) {
-                                                newBoundsArray[j][i] = newBounds.get(i).getAsFloat();
-                                            }
-                                        }
-
-                                        logger.info("Handling move-multiple-token request: strokeIndices length = " + tokenIndices.size());
-
-                                        for (int i = 0; i < tokenIndices.size(); ++i) {
-                                            int tokenIndex = tokenIndices.get(i).getAsInt();
-
-                                            try {
-                                                hwEng.moveToken(tokenIndex, newBoundsArray[i]);
-                                            } catch (HandwritingEngineException exc) {
-                                                errors.add(new JsonPrimitive("Failed to move token " + i + " of " + tokenIndices.size() +
-                                                        " due to: " + exc.getMessage()));
-                                            }
-                                        }
-
-                                    } else if (action.equals("merge-strokes-as-token")) {  /* Merge strokes as token */
-                                        JsonArray mergeIndicesJson = null;
-                                        if (reqObj.get("strokeIndices").isJsonArray()) {
-                                            mergeIndicesJson = reqObj.get("strokeIndices").getAsJsonArray();
-                                        } else if (reqObj.get("strokeIndices").isJsonPrimitive()) {
-                                            mergeIndicesJson = new JsonArray();
-                                            mergeIndicesJson.add(reqObj.get("strokeIndices"));
-                                        }
-
-                                        /* Convert the JSON array to int array */
-                                        int[] mergeIndices = new int[mergeIndicesJson.size()];
-                                        logger.info("Merging " + mergeIndices.length + " stroke(s)");
-                                        for (int j = 0; j < mergeIndicesJson.size(); ++j) {
-                                            mergeIndices[j] = mergeIndicesJson.get(j).getAsInt();
-                                        }
-
-                                        hwEng.mergeStrokesAsToken(mergeIndices);
-//                                hwEng.strokeCurator.mergeStrokesAsToken(mergeIndices);
-                                    } else if (action.equals("get-token-bounds")) {  /* Get token bounds */
-                                        final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
-
-                                        float[] bounds = null;
-                                        try {
-                                            bounds = hwEng.getTokenBounds(tokenIdx);
-                                        } catch (HandwritingEngineException exc) {
-                                            errors.add(new JsonPrimitive("Failed to move token due to: " + exc.getMessage()));
-                                        }
-
-                                        JsonArray boundsJson = new JsonArray();
-                                        for (int i = 0; i < bounds.length; ++i) {
-                                            boundsJson.add(new JsonPrimitive(bounds[i]));
-                                        }
-                                        outObj.add("tokenBounds", boundsJson);
-
-                                    } else if (action.equals("force-set-token-name")) {  /* Force set token name */
-                                        int setTokenIdx = reqObj.get("tokenIdx").getAsInt();
-                                        String setTokenRecogWinner = reqObj.get("tokenRecogWinner").getAsString();
-
-                                        hwEng.forceSetRecogWinner(setTokenIdx, setTokenRecogWinner);
-//                                hwEng.strokeCurator.forceSetRecogWinner(setTokenIdx, setTokenRecogWinner);
-                                    } else if (action.equals("clear")) {                        /* Clear */
-                                        hwEng.clearStrokes();
-//                                hwEng.strokeCurator.clear();
-                                    } else if (action.equals("parse-token-set")) {      /* Parse token set */
-//                                        final TokenSetParserOutput[] parserResults = new TokenSetParserOutput[1];
-
-                                        final HandwritingEngine hwEng0 = hwEng;
-                                        final long parsingTimeoutMillis0 = parsingTimeoutMillis;
-
-                                        final Future<TokenSetParserOutput> future = execService.submit(
-                                                new Callable<TokenSetParserOutput>() {
-                                                     @Override
-                                                     public TokenSetParserOutput call() {
-                                                         TokenSetParserOutput parserResult = null;
-                                                         try {
-                                                             parserResult = hwEng0.parseTokenSet();
-                                                         } catch (HandwritingEngineException exc) {
-                                                             errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILURE_ERROR_MESSAGE + ": " + exc.getMessage()));
-                                                         }
-
-                                                         return parserResult;
-                                                     }
-                                                });
-
-                                        execService.schedule(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                future.cancel(true);
-                                            }
-                                        }, parsingTimeoutMillis0, TimeUnit.MILLISECONDS);
-
-                                        TokenSetParserOutput parserResult = null;
-                                        try {
-                                            parserResult = future.get();
-                                        } catch (CancellationException cancelExc) {
-                                            errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_TIMEOUT));
-                                        } catch (InterruptedException intExc) {
-                                            errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_INTERRUPTED));
-                                        } catch (ExecutionException execExc) {
-                                            errors.add(new JsonPrimitive("Exception occurred during parsing"));
-                                        }
-
-                                        if (parserResult != null) {
-                                            outObj.add("parseResult", gson.toJsonTree(parserResult));
-                                        } else {
-                                            outObj.add("parseResult", new JsonNull());
-                                        }
-                                    } else if (action.equals("get-graphical-productions")) {
-
-                                        outObj.add("graphicalProductions", hwEng.getGraphicalProductions());
-
-                                    } else if (action.equals("get-var-map")) {
-                                        PlatoVarMap varMap = null;
-                                        try {
-                                            varMap = hwEng.getVarMap();
-                                        } catch (HandwritingEngineException exc) {
-                                            errors.add(new JsonPrimitive("Encountered exception during getVarMap() call: " +
-                                                    exc.getMessage()));
-                                        }
-
-                                        JsonObject varMapObj = new JsonObject();
-                                        for (final String varName : varMap.getVarNamesSorted()) {
-                                            final ValueUnion vu = varMap.getVarValue(varName);
-
-                                            JsonObject vuObj = serializeValueUnion(varName, vu);
-                                            varMapObj.add(varName, vuObj);
-                                        }
-
-                                        outObj.add("varMap", varMapObj);
-
-                                    } else if (action.equals("get-from-var-map")) {           /* Get from var map */
-                                        final String varName = reqObj.get("varName").getAsString();
-
-                                        ValueUnion vu = null;
-                                        try {
-                                            vu = hwEng.getFromVarMap(varName);
-                                        } catch (HandwritingEngineException exc) {
-                                            errors.add(new JsonPrimitive("Encountered exception during getFromVarMap() call: " +
-                                                    exc.getMessage()));
-                                        }
-
-                                        JsonObject vuObj = serializeValueUnion(varName, vu);
-                                        outObj.add("var", vuObj);
-                                    } else if (action.equals("inject-state")) {
-                                        JsonObject stateData = reqObj.get("stateData").getAsJsonObject();
-
-                                        hwEng.injectState(stateData);
-
-                                    } else if (action.equals("get-last-stroke-curator-user-action")) {
-                                        StrokeCuratorUserAction strokeCuratorUserAction = hwEng.getLastStrokeCuratorUserAction();
-
-                                        if (strokeCuratorUserAction != null) {
-                                            outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(strokeCuratorUserAction.toString()));
-                                        } else {
-                                            outObj.add("lastStrokeCuratorUserAction", null);
-                                        }
-                                    } else if (action.equals("undo-stroke-curator-user-action")) {
-                                        try {
-                                            hwEng.undoStrokeCuratorUserAction();
-                                        } catch (IllegalStateException exc) {
-                                            errors.add(new JsonPrimitive("Cannot undo stroke curator user action"));
-                                        }
-                                    } else if (action.equals("redo-stroke-curator-user-action")) {
-                                        try {
-                                            hwEng.redoStrokeCuratorUserAction();
-                                        } catch (IllegalStateException exc) {
-                                            errors.add(new JsonPrimitive("Cannot redo stroke curator user action"));
-                                        }
-                                    }
-
-                        /* TODO: The following steps may not be necessary for actions such as "parse-token-set" */
-                                    /* Get written token set */
-                                    CWrittenTokenSet wtSet = hwEng.getTokenSet();
-//                            CWrittenTokenSet wtSet = hwEng.strokeCurator.getWrittenTokenSet();
-                                    logger.info("Done calling getWrittenTokenSet()"); //DEBUG
-                                    JsonObject wtSetJsonObj = CWrittenTokenSetJsonHelper.CWrittenTokenSet2JsonObj(wtSet);
-                                    outObj.add("writtenTokenSet", wtSetJsonObj);
-
-                                    /* Get last stroke-curator user action */
-                                    StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastStrokeCuratorUserAction();
-                                    if (lastStrokeCuratorUserAction != null) {
-                                        outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(lastStrokeCuratorUserAction.toString()));
-                                    } else {
-                                        outObj.add("lastStrokeCuratorUserAction", new JsonNull());
-                                    }
-
-                                    /* Undo/redo flags */
-                                    outObj.add("canUndoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canUndoStrokeCuratorUserAction()));
-                                    outObj.add("canRedoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canRedoStrokeCuratorUserAction()));
-
-                        /* Get the constituent strokes of the written token set */
-                                    List<int[]> wtConstStrokeIndices = hwEng.getTokenConstStrokeIndices();
-//                            List<int []> wtConstStrokeIndices = hwEng.strokeCurator.getWrittenTokenConstStrokeIndices();
-                                    JsonArray constituentStrokes = CWrittenTokenSetJsonHelper.listOfInt2JsonArray(wtConstStrokeIndices);
-                                    outObj.add("constituentStrokes", constituentStrokes);
-                                } else {
-                                    errors.add(new JsonPrimitive("The specified engine UUID does not exist in the handwriting engine pool"));
+                                final float[] newBounds = new float[newBoundsJson.size()];
+                                for (int i = 0; i < newBoundsJson.size(); ++i) {
+                                    newBounds[i] = newBoundsJson.get(i).getAsFloat();
                                 }
-                            } else {
-                                errors.add(new JsonPrimitive("Request did not specify engine UUID, (engUuid), " +
-                                        "which is required for the action \"" + action + "\""));
+
+                                logger.info("Handling move-single-token request: strokeIdx = " + tokenIdx +
+                                        ", newBounds.length = " + newBounds.length);
+
+
+                                try {
+                                    hwEng.moveToken(tokenIdx, newBounds);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive("Failed to move token due to: " + exc.getMessage()));
+                                }
+                            } else if (action.equals("move-multiple-tokens")) {        /* Move multiple tokens */
+
+                                JsonArray tokenIndices = reqObj.get("tokenIndices").getAsJsonArray();
+                                JsonArray newBoundsArrayJson = reqObj.get("newBoundsArray").getAsJsonArray();
+
+                                final float[][] newBoundsArray = new float[newBoundsArrayJson.size()][];
+                                for (int j = 0; j < newBoundsArrayJson.size(); ++j) {
+                                    JsonArray newBounds = newBoundsArrayJson.get(j).getAsJsonArray();
+
+                                    newBoundsArray[j] = new float[newBounds.size()];
+                                    for (int i = 0; i < newBounds.size(); ++i) {
+                                        newBoundsArray[j][i] = newBounds.get(i).getAsFloat();
+                                    }
+                                }
+
+                                logger.info("Handling move-multiple-token request: strokeIndices length = " + tokenIndices.size());
+
+                                for (int i = 0; i < tokenIndices.size(); ++i) {
+                                    int tokenIndex = tokenIndices.get(i).getAsInt();
+
+                                    try {
+                                        hwEng.moveToken(tokenIndex, newBoundsArray[i]);
+                                    } catch (HandwritingEngineException exc) {
+                                        errors.add(new JsonPrimitive("Failed to move token " + i + " of " + tokenIndices.size() +
+                                                " due to: " + exc.getMessage()));
+                                    }
+                                }
+
+                            } else if (action.equals("merge-strokes-as-token")) {  /* Merge strokes as token */
+                                JsonArray mergeIndicesJson = null;
+                                if (reqObj.get("strokeIndices").isJsonArray()) {
+                                    mergeIndicesJson = reqObj.get("strokeIndices").getAsJsonArray();
+                                } else if (reqObj.get("strokeIndices").isJsonPrimitive()) {
+                                    mergeIndicesJson = new JsonArray();
+                                    mergeIndicesJson.add(reqObj.get("strokeIndices"));
+                                }
+
+                                /* Convert the JSON array to int array */
+                                int[] mergeIndices = new int[mergeIndicesJson.size()];
+                                logger.info("Merging " + mergeIndices.length + " stroke(s)");
+                                for (int j = 0; j < mergeIndicesJson.size(); ++j) {
+                                    mergeIndices[j] = mergeIndicesJson.get(j).getAsInt();
+                                }
+
+                                hwEng.mergeStrokesAsToken(mergeIndices);
+//                                hwEng.strokeCurator.mergeStrokesAsToken(mergeIndices);
+                            } else if (action.equals("get-token-bounds")) {  /* Get token bounds */
+                                final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
+
+                                float[] bounds = null;
+                                try {
+                                    bounds = hwEng.getTokenBounds(tokenIdx);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive("Failed to move token due to: " + exc.getMessage()));
+                                }
+
+                                JsonArray boundsJson = new JsonArray();
+                                for (int i = 0; i < bounds.length; ++i) {
+                                    boundsJson.add(new JsonPrimitive(bounds[i]));
+                                }
+                                outObj.add("tokenBounds", boundsJson);
+
+                            } else if (action.equals("get-written-token-bounds")) {
+                                throw new IllegalStateException("get-written-token-bounds not implemented yet");
+
+                            } else if (action.equals("force-set-token-name")) {  /* Force set token name */
+                                int setTokenIdx = reqObj.get("tokenIdx").getAsInt();
+                                String setTokenRecogWinner = reqObj.get("tokenRecogWinner").getAsString();
+
+                                hwEng.forceSetRecogWinner(setTokenIdx, setTokenRecogWinner);
+//                                hwEng.strokeCurator.forceSetRecogWinner(setTokenIdx, setTokenRecogWinner);
+                            } else if (action.equals("clear")) {                        /* Clear */
+                                hwEng.clearStrokes();
+//                                hwEng.strokeCurator.clear();
+                            } else if (action.equals("parse-token-set") ||
+                                       action.equals("parse-token-subset")) {      /* Parse token set */
+
+                                final HandwritingEngine hwEng0 = hwEng;
+                                final long parsingTimeoutMillis0 = parsingTimeoutMillis;
+                                final boolean isSubsetParsing = action.equals("parse-token-subset");
+
+                                // Obtain the subset token indices
+                                final int[] tokenIndices;
+                                if (isSubsetParsing) {
+                                    JsonArray tokenIndicesArray = reqObj.get("tokenIndices").getAsJsonArray();
+
+                                    tokenIndices = new int[tokenIndicesArray.size()];
+                                    for (int k = 0; k < tokenIndicesArray.size(); ++k) {
+                                        tokenIndices[k] = tokenIndicesArray.get(k).getAsInt();
+                                    }
+                                } else {
+                                    tokenIndices = null;
+                                }
+
+                                final Future<TokenSetParserOutput> future = execService.submit(
+                                        new Callable<TokenSetParserOutput>() {
+                                             @Override
+                                             public TokenSetParserOutput call() {
+                                                 TokenSetParserOutput parserResult = null;
+                                                 try {
+                                                     if (isSubsetParsing) {
+                                                         parserResult = hwEng0.parseTokenSet(tokenIndices);
+                                                     } else {
+                                                         parserResult = hwEng0.parseTokenSet();
+                                                     }
+                                                 } catch (HandwritingEngineException exc) {
+                                                     errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILURE_ERROR_MESSAGE + ": " + exc.getMessage()));
+                                                 }
+
+                                                 return parserResult;
+                                             }
+                                        });
+
+                                execService.schedule(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        future.cancel(true);
+                                    }
+                                }, parsingTimeoutMillis0, TimeUnit.MILLISECONDS);
+
+                                TokenSetParserOutput parserResult = null;
+                                try {
+                                    parserResult = future.get();
+                                } catch (CancellationException cancelExc) {
+                                    errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_TIMEOUT));
+                                } catch (InterruptedException intExc) {
+                                    errors.add(new JsonPrimitive(TOKEN_SET_PARSING_FAILUE_INTERRUPTED));
+                                } catch (ExecutionException execExc) {
+                                    errors.add(new JsonPrimitive("Exception occurred during parsing"));
+                                }
+
+                                if (parserResult != null) {
+                                    outObj.add("parseResult", gson.toJsonTree(parserResult));
+                                } else {
+                                    outObj.add("parseResult", new JsonNull());
+                                }
+
+                            } else if (action.equals("get-from-var-map")) {           /* Get from var map */ //TODO Move out
+                                final String varName = reqObj.get("varName").getAsString();
+
+                                ValueUnion vu = null;
+                                try {
+                                    vu = hwEng.getFromVarMap(varName);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive("Encountered exception during getFromVarMap() call: " +
+                                            exc.getMessage()));
+                                }
+
+                                JsonObject vuObj = serializeValueUnion(varName, vu);
+                                outObj.add("var", vuObj);
+                            } else if (action.equals("inject-state")) {
+                                JsonObject stateData = reqObj.get("stateData").getAsJsonObject();
+
+                                hwEng.injectState(stateData);
+
+                            } else if (action.equals("get-last-stroke-curator-user-action")) {
+                                StrokeCuratorUserAction strokeCuratorUserAction = hwEng.getLastStrokeCuratorUserAction();
+
+                                if (strokeCuratorUserAction != null) {
+                                    outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(strokeCuratorUserAction.toString()));
+                                } else {
+                                    outObj.add("lastStrokeCuratorUserAction", null);
+                                }
+                            } else if (action.equals("undo-stroke-curator-user-action")) {
+                                try {
+                                    hwEng.undoStrokeCuratorUserAction();
+                                } catch (IllegalStateException exc) {
+                                    errors.add(new JsonPrimitive("Cannot undo stroke curator user action"));
+                                }
+                            } else if (action.equals("redo-stroke-curator-user-action")) {
+                                try {
+                                    hwEng.redoStrokeCuratorUserAction();
+                                } catch (IllegalStateException exc) {
+                                    errors.add(new JsonPrimitive("Cannot redo stroke curator user action"));
+                                }
                             }
+
+                            /* TODO: The following steps may not be necessary for actions such as "parse-token-set" */
+                            /* Get written token set */
+                            CAbstractWrittenTokenSet tokenSet = hwEng.getTokenSet();
+                            CWrittenTokenSet writtenTokenSet = hwEng.getWrittenTokenSet();
+
+                            logger.info("Done calling getWrittenTokenSet()"); //DEBUG
+                            JsonObject tokenSetJsonObj =
+                                    CWrittenTokenSetJsonHelper.CAbstractWrittenTokenSet2JsonObj(tokenSet);
+                            JsonObject writtenTokenSetJsonObj =
+                                    CWrittenTokenSetJsonHelper.CAbstractWrittenTokenSet2JsonObj(writtenTokenSet);
+
+                            outObj.add("tokenSet", tokenSetJsonObj);
+                            outObj.add("writtenTokenSet", writtenTokenSetJsonObj);
+
+                            /* Get last stroke-curator user action */
+                            StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastStrokeCuratorUserAction();
+                            if (lastStrokeCuratorUserAction != null) {
+                                outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(lastStrokeCuratorUserAction.toString()));
+                            } else {
+                                outObj.add("lastStrokeCuratorUserAction", new JsonNull());
+                            }
+
+                            /* Undo/redo flags */
+                            outObj.add("canUndoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canUndoStrokeCuratorUserAction()));
+                            outObj.add("canRedoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canRedoStrokeCuratorUserAction()));
+
+                            /* Get the constituent strokes of the written token set */
+                            List<int[]> wtConstStrokeIndices = hwEng.getTokenConstStrokeIndices();
+//                            List<int []> wtConstStrokeIndices = hwEng.strokeCurator.getWrittenTokenConstStrokeIndices();
+                            JsonArray constituentStrokes = CWrittenTokenSetJsonHelper.listOfInt2JsonArray(wtConstStrokeIndices);
+                            outObj.add("constituentStrokes", constituentStrokes);
+
                         }
+                    } catch (HandwritingEngineException e) {
+                        errors.add(new JsonPrimitive("Handwriting engine exception occurred: " + e.getMessage()));
                     }
                 }
 
@@ -633,6 +660,34 @@ public class HandwritingServlet extends HttpServlet {
 
     void setParsingTimeoutMillis(long parsingTimeoutMillis) {
         this.parsingTimeoutMillis = parsingTimeoutMillis;
+    }
+
+    private HandwritingEngine getHandwritingEngineFromRequest(JsonObject reqObj, JsonArray errors) {
+        HandwritingEngineImpl hwEng = null;
+        JsonElement engineUuidElem = reqObj.get("engineUuid");
+
+        if (engineUuidElem == null) {
+            errors.add(new JsonPrimitive("Engine UUID is not specified"));
+        } else {
+            String engUuid = engineUuidElem.getAsString();
+
+            try {
+                if (hwEngPool.engineExists(engUuid)) {
+                    hwEng = hwEngPool.getHandwritingEngine(engUuid);
+                    hwEngPool.updateWorkerTimestamp(engUuid); /* TODO: Refactor in */
+                } else {
+                    errors.add(new JsonPrimitive("The specified engine UUID does not exist in the handwriting engine pool"));
+                }
+//                else {
+//                    errors.add(new JsonPrimitive("Request did not specify engine UUID, (engUuid), " +
+//                            "which is required for the action \"" + action + "\""));
+//                }
+            } catch (IllegalArgumentException exc) {
+                errors.add(new JsonPrimitive("Engine UUID is invalid: " + engUuid));
+            }
+        }
+
+        return hwEng;
     }
 }
 

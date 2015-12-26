@@ -38,7 +38,7 @@
         <dependency>
             <groupId>me.scai.plato</groupId>
             <artifactId>math-handwriting-lib</artifactId>
-            <version>0.1.1-SNAPSHOT</version>
+            <version>0.1.2-SNAPSHOT</version>
         </dependency>
 
         <dependency>
