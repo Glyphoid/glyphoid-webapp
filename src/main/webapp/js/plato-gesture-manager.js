@@ -35,6 +35,9 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     selectedTokenBoxStyle    : "#008022",
                     selectedFontStyle        : "#008022",
 
+                    nodeTokenBoxStyle        : "#880088",
+                    nodeTokenFontStyle       : "#880088",
+
                     defaultFontPoints : 20,
                     fontScaleFactor   : null
                 },
@@ -229,9 +232,17 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             /* State stack for local-only states such as strokes */
             this.stateStack = new StateStack(this.options.stateStackCapacity);
 
-            /* Token data, obtained from a back-end stroke curator */
+            /* (Abstract) token data, obtained from a back-end stroke curator */
             this.tokenNames = [];
             this.tokenBounds = [];
+
+            /* Node token data */
+            this.writtenTokenNames = [];
+            this.writtenTokenBounds = [];
+
+            /* Correspondence info between written tokens and abstract tokens */
+            this.writtenTokenUuids = [];
+            this.constituentWrittenTokenUuids = [];
 
             this.viewPort = new ViewPort({
                 width     : this.canvasWidth,
@@ -244,10 +255,11 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     throw "Invalid input";
                 }
 
-                if (tokenIdx >= self.tokenBounds.length) {
+                if (tokenIdx >= self.writtenTokenBounds.length) {
                     throw "Token index out of bounds";
                 }
 
+                // WARNING: Brute force
                 var strokeIndices = new Array();
                 for (var i = 0; i < self.strokeTokenOwners.length; ++i) {
                     if (self.strokeTokenOwners[i] === tokenIdx) {
@@ -398,26 +410,53 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 return [minX, minY, maxX, maxY];
             };
 
-            /* Process the writtenTokenSet output from the back-end stroke curator and
+            /** Process the writtenTokenSet output from the back-end stroke curator and
              * marshall the data into members.
-             * Input argument: tokens         : an array
+             * Input argument: abstractTokens : an array of abstract tokens, some of which might be node tokens if subset parsing has occurred previously
+             *                 writtenTokens  : an array of written tokens
              *                 constStokes    : indices of constituent strokes (an array of arrays)
              *                 pushStack      : whether strokes and other local states should be pushed on to the local state stack
              *                 causedByAction : the action that causes this update (optional)
-             *                 */
-            this.procWrittenTokenSet = function(tokens, constStrokes, pushLocalStateStack, causedByAction) {
-                var N = tokens.length;
+             **/
+            this.procTokenSet = function(responseJSON, pushLocalStateStack, causedByAction) {
+                var abstractTokens = responseJSON.tokenSet.tokens;
+                var writtenTokens  = responseJSON.writtenTokenSet.tokens;
+                var constStrokes   = responseJSON.constituentStrokes;
+
+                self.constituentWrittenTokenUuids = responseJSON.constituentWrittenTokenUuids;
+                self.writtenTokenUuids            = responseJSON.writtenTokenUuids;
+
+                // Process written tokens (if any)
+                self.writtenTokenNames = [];
+                self.writtenTokenBounds = [];
+
+                for (var m = 0; m < writtenTokens.length; ++m) {
+                    var writtenToken = writtenTokens[m];
+
+                    self.writtenTokenNames.push(writtenToken.recogWinner);
+                    self.writtenTokenBounds.push(writtenToken.bounds);
+                }
+
+                // Process abstract tokens
+                var N = abstractTokens.length;
 
                 self.tokenNames = new Array(N);
                 self.tokenBounds = new Array(N);
 
-                for (var i = 0; i < N; ++i) {
-                    self.tokenNames[i] = tokens[i].recogWinner;
-                    self.tokenBounds[i] = tokens[i].bounds;
+                for (var n = 0; n < N; ++n) {
+                    var token = abstractTokens[n];
+                    if (typeof token.recogWinner === "string") { // Written token
+                        self.tokenNames[n] = token.recogWinner;
+                        self.tokenBounds[n] = token.bounds;
+                    } else { // Node token
+                        self.tokenNames[n] = token.parsingResult;
+                        self.tokenBounds[n] = token.tokenBounds;
+                    }
+
                 }
 
                 /* Process the stroke ownership */
-                if (tokens.length !== constStrokes.length) {
+                if (writtenTokens.length !== constStrokes.length) {
                     console.error("The lengths of tokens and constStrokes do not match");
                     return;
                 }
@@ -767,8 +806,14 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                             self.removeTokens(self.cursorSelectedTokenIndices);
                         }
                     } else if (event.keyCode === 13) { // Enter key: Parse. // TODO: Shift key: Incremental parsing using NodeTokens
-                        if ( !$("#parseTokenSet").prop("disabled") ) {
-                            $("#parseTokenSet").trigger("click"); //TODO: Get rid of reverse dependency on element ID.d
+                        if (event.shiftKey) {   // Shift+Enter: Parse selected subset of tokens
+                            if (!$("#parseSelected").prop("disabled")) {
+                                $("#parseSelected").trigger("click"); //TODO: Get rid of reverse dependency on element ID.d
+                            }
+                        } else { // Enter: Parse the entire token set
+                            if (!$("#parseTokenSet").prop("disabled")) {
+                                $("#parseTokenSet").trigger("click"); //TODO: Get rid of reverse dependency on element ID.d
+                            }
                         }
                     }
 
@@ -1083,8 +1128,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                             /* In this call, we set pushLocalStateStack to false, because the state-stack pushing action
                              * will be performed after the next two lines of code.
                              */
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                                responseJSON.constituentStrokes, false);
+                            self.procTokenSet(responseJSON, false);
 
                             /* Update the stroke states. This is done after the ajax call to the engine, so that in case
                              * a state injection is required, the serialized state to inject will not going to include the
@@ -1151,8 +1195,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                     self.hwEngAgent.moveMultipleTokens(self.rightButtonTokenMoveIdx, newBoundsArray,
                         function(responseJSON, elapsedMillis) {    /* Clear action success */
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
-                                true, "moveMultipleTokens");
+                            self.procTokenSet(responseJSON, true, "moveMultipleTokens");
 
                             self.redraw();
                         },
@@ -1246,7 +1289,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     function(responseJSON, elapsedMillis) {    /* Clear action success */
 //                        console.log("Clear action succeeded. responseJSON =", responseJSON);
 
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, true);
+                        self.procTokenSet(responseJSON, true);
 
                         self.redraw();
                     },
@@ -1271,15 +1314,16 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             };
 
-            /* Merge a subset of the strokes, specified with the indices, as a token */
+            /** Merge a subset of the strokes, specified with the indices, as a token
+             * @param strokeIndices  Indices to the strokes to be merged
+             * */
             this.mergeStrokesAsToken = function(strokeIndices, successCallback, failureCallback) {
                 self.hwEngAgent.mergeStrokesAsToken(
                     strokeIndices,
                     function(responseJSON, elapsedMillis) {    /* Merge action success */
 //                        console.log("Merge action succeeded. responseJSON =", responseJSON);
 
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                            responseJSON.constituentStrokes, true);
+                        self.procTokenSet(responseJSON, true);
 
                         self.redraw();
 
@@ -1313,13 +1357,13 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                     if (strokeIndices.length === 2) {
                         self.mergeStrokesAsToken(strokeIndices[1], function(responseJSON, elapsedMillis) {
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes, true);
+                            self.procTokenSet(responseJSON, true);
                             self.redraw();
                         });
                     } else if (strokeIndices.length === 3) {
                         self.mergeStrokesAsToken(strokeIndices[1], function(responseJSON1, elapsedMillis1) {
                             self.mergeStrokesAsToken(strokeIndices[2], function(responseJSON2, elapsedMillis2) {
-                                self.procWrittenTokenSet(responseJSON2.writtenTokenSet.tokens, responseJSON2.constituentStrokes, true);
+                                self.procTokenSet(responseJSON2, true);
                                 self.redraw();
                             });
                         });
@@ -1335,8 +1379,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     tokenIdx, tokenName,
                     function(responseJSON, elapsedMillis) { /* Success callback */
 
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                            responseJSON.constituentStrokes, true, "forceSetTokenRecogWinner");
+                        self.procTokenSet(responseJSON, true, "forceSetTokenRecogWinner");
                         self.redraw();
                     },
                     function() {    /* Failure callback */
@@ -1462,8 +1505,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 //                            console.log("Removal of token (idxToken = " + tokenIdx +
 //                                        ") was successful: responseJSON =", responseJSON);
 
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                            responseJSON.constituentStrokes, true);
+                        self.procTokenSet(responseJSON, true);
 
                         self.redraw();
                     },
@@ -1492,8 +1534,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                             self.removeStrokesOfToken(tokenIndices[removeIdx]);
                             removeIdx--;
 
-                            self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens,
-                                                     responseJSON.constituentStrokes, true);
+                            self.procTokenSet(responseJSON, true);
 
                             if (removeIdx >= 0) {
                                 removeOneToken();
@@ -1517,8 +1558,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.undoStrokeCuratorUserAction = function() {
                 self.hwEngAgent.undoStrokeCuratorUserAction(
                     function(responseJSON, elapsedMillis) {
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
-                                                 false, "undoStrokeCuratorUserAction");
+                        self.procTokenSet(responseJSON, false, "undoStrokeCuratorUserAction");
                         self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
 
                         self.localStateStackUndo();
@@ -1537,8 +1577,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             this.redoStrokeCuratorUserAction = function() {
                 self.hwEngAgent.redoStrokeCuratorUserAction(
                     function(responseJSON, elapsedMillis) {
-                        self.procWrittenTokenSet(responseJSON.writtenTokenSet.tokens, responseJSON.constituentStrokes,
-                                                 false, "redoStrokeCuratorUserAction");
+                        self.procTokenSet(responseJSON, false, "redoStrokeCuratorUserAction");
+
                         self.cursorSelectedTokenIndices = [self.tokenNames.length - 1];
 
                         self.localStateStackRedo();
@@ -1550,7 +1590,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 );
             };
 
-            /* Parse token set */
+            /* Parse token set (Full token set parsing) */
             this.parseTokenSet = function(successFunc, errorFunc) {
                 /* Call to the back-end to parse the token set */
                 self.hwEngAgent.parseTokenSet(
@@ -1580,6 +1620,53 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     function() {             /* Failure in removing last token */
                         console.log("Parsing of token set failed.");
                         errorFunc("[Parsing operation failed]");
+                    }
+                )
+            };
+
+
+            /**
+             * Parse subset of tokens. If successful, the parsed subset of tokens will be merged into a NodeToken.
+             * @param tokenIndices  Indices of the tokens to be parsed as a subset and turned into a NodeToken
+             * @param successFunc
+             * @param errorFunc
+             */
+            this.parseTokenSubset = function(tokenIndices, successFunc, errorFunc) {
+                // TODO: tokenIndices needs to be updated for successive subset parsing
+
+                /* Call to the back-end to parse the token set */
+                self.hwEngAgent.parseTokenSubset(
+                    tokenIndices,
+                    function(responseJSON, elapsedMillis) {  // TODO: De-duplicate the callbacks with parseTokenSet
+//                        console.log("Parsing of token set succeeded: responseJSON =", responseJSON);
+
+                        self.redraw();
+
+                        if (responseJSON.errors.length === 0) {
+                            if (typeof successFunc === "function") {
+                                successFunc(responseJSON.parseResult, elapsedMillis);
+
+                            }
+                        } else {
+                            var allErrorMsgs = "[";
+                            for (var j = 0; j < responseJSON.errors.length; ++j) {
+                                allErrorMsgs += responseJSON.errors[j];
+                                if (j < responseJSON.errors.length - 1) {
+                                    allErrorMsgs += " | ";
+                                }
+                            }
+                            allErrorMsgs += "]";
+
+                            errorFunc(allErrorMsgs);
+                        }
+
+                        self.procTokenSet(responseJSON, true);
+
+                        self.redraw();
+                    },
+                    function() {             /* Failure in removing last token */
+                        console.log("Parsing of token subset failed.");
+                        errorFunc("[Subset parsing operation failed]");
                     }
                 )
             };
@@ -1657,7 +1744,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     }
                 }
 
-                /* Draw tokens: names and bounds */
+                /* Draw written tokens: names and bounds */
                 for (var i = 0; i < self.tokenNames.length; ++i) {
                     /* Draw bounding boxes for the tokens */
                     var bnds = self.tokenBounds[i];
@@ -1698,6 +1785,36 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                         ctx.fillText(tokenDisplayName, canvasBnds[0], canvasBnds[1]);
                     }
                 }
+
+//                /* Draw node tokens (if any): names and bounds */
+//                for (var k = 0; k < self.nodeTokenNames.length; ++k) {
+//                    /* Draw bounding boxes for the tokens */
+//                    var bnds = self.nodeTokenBounds[k];
+//                    var canvasBnds = self.viewPort.worldBnds2CanvasBnds(bnds);
+//
+//                    ctx.strokeStyle = self.options.drawOptions.nodeTokenBoxStyle;
+//
+//                    ctx.beginPath();
+//                    ctx.rect(canvasBnds[0], canvasBnds[1], canvasBnds[2] - canvasBnds[0], canvasBnds[3] - canvasBnds[1]);
+//                    ctx.stroke();
+//
+//                    /* Draw node token parsing result */
+//                    var fontPoints = self.options.drawOptions.defaultFontPoints;
+//                    if (self.options.drawOptions.fontScaleFactor) {
+//                        fontPoints = ((canvasBnds[2] - canvasBnds[0]) + (canvasBnds[3] - canvasBnds[1])) * 0.5 *
+//                            self.options.drawOptions.fontScaleFactor;
+//                    }
+//
+//                    ctx.fillStyle = self.options.drawOptions.nodeTokenFontStyle;
+//
+//                    var nodeTokenParsingResult = self.nodeTokenNames[k];
+//
+//                    if (self.options.drawOptions.fontScaleFactor) {
+//                        ctx.fillText(nodeTokenParsingResult, canvasBnds[0], canvasBnds[3]);
+//                    } else {
+//                        ctx.fillText(nodeTokenParsingResult, canvasBnds[0], canvasBnds[1]);
+//                    }
+//                }
 
                 /* Draw the selection box, if any */
                 if (self.cursorSelectMode && self.cursorSelectBoxWorld.length === 4) {
@@ -1943,6 +2060,35 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 return JSON.stringify(json);
             };
 
+            /**
+             * Translate indices of abstract tokens to indices of written tokens
+             * Uses the token UUIDs
+             * @param ati  Abstract token indices, as an array
+             * @return     Indices of the written tokens, as an array
+             */
+            this.abstract2WrittenTokenIndices = function(ati) {
+                if (!Array.isArray(ati)) {
+                    throw new Error("Input is not an array");
+                }
+
+                var wti = []; // Result: written token indices
+                for (var i = 0; i < ati.length; ++i) {
+                    var index = ati[i];
+
+                    var wtUuids = self.constituentWrittenTokenUuids[index];
+                    if (!Array.isArray(wtUuids)) {
+                        throw new Error("Unexpected error: constituent token indices is not an array");
+                    }
+
+                    for (var j = 0; j < wtUuids.length; ++j) {
+                        wti.push(self.writtenTokenUuids.indexOf(wtUuids[j]));
+                    }
+                }
+
+                return wti;
+
+            };
+
             this.removeEngine = function() {
                 self.hwEngAgent.removeEngine(
                     function(resp) {
@@ -1956,6 +2102,11 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             this.updateUIControlState = function() {
                 $("#parseTokenSet").prop("disabled",        self.getNumTokens() === null || self.getNumTokens() === 0);
+                $("#parseDropdown").prop("disabled",        self.getNumTokens() === null || self.getNumTokens() === 0);
+                $("#parseSelected").prop("disabled",        self.getNumTokens() === null ||
+                                                            self.getNumTokens() === 0 ||
+                                                            self.cursorSelectedTokenIndices.length === 0);
+
                 $("#removeLastToken").prop("disabled",      self.getNumTokens() === null || self.getNumTokens() === 0);
                 $("#clearPaths").prop("disabled",           self.getNumTokens() === null || self.getNumTokens() <= 1);
                 $("#mergeLast2Strokes").prop("disabled",    self.getNumTokens() === null || self.getNumTokens() <= 1);
@@ -1963,7 +2114,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 $("#mergeLast3Strokes").prop("disabled",    self.getNumTokens() === null || self.getNumTokens() <= 2);
                 $("#mergeLast4Strokes").prop("disabled",    self.getNumTokens() === null || self.getNumTokens() <= 3);
                 $("#mergeStrokesDropdown").prop("disabled", self.getNumTokens() === null || self.getNumTokens() <= 1);
-                $("#unmergeLastToken").prop("disabled",     self.getNumTokens() === null || !self.hwEngAgent.isLastTokenMerged())
+                $("#unmergeLastToken").prop("disabled",     self.getNumTokens() === null || !self.hwEngAgent.isLastTokenMerged());
 
                 $("#undoStrokeCuratorUserAction").prop("disabled", !self.canUndoStrokeCuratorUserAction());
                 $("#redoStrokeCuratorUserAction").prop("disabled", !self.canRedoStrokeCuratorUserAction());

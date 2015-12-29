@@ -547,14 +547,20 @@ public class HandwritingServlet extends HttpServlet {
                             CAbstractWrittenTokenSet tokenSet = hwEng.getTokenSet();
                             CWrittenTokenSet writtenTokenSet = hwEng.getWrittenTokenSet();
 
-                            logger.info("Done calling getWrittenTokenSet()"); //DEBUG
                             JsonObject tokenSetJsonObj =
                                     CWrittenTokenSetJsonHelper.CAbstractWrittenTokenSet2JsonObj(tokenSet);
                             JsonObject writtenTokenSetJsonObj =
                                     CWrittenTokenSetJsonHelper.CAbstractWrittenTokenSet2JsonObj(writtenTokenSet);
 
-                            outObj.add("tokenSet", tokenSetJsonObj);
-                            outObj.add("writtenTokenSet", writtenTokenSetJsonObj);
+                            JsonArray constituentWrittenTokenUuids = gson.toJsonTree(hwEng.getConstituentWrittenTokenUUIDs()).getAsJsonArray();
+                            JsonArray writtenTokenUuids = gson.toJsonTree(hwEng.getWrittenTokenUUIDs()).getAsJsonArray();
+
+                            outObj.add("writtenTokenSet", writtenTokenSetJsonObj);  // Written token set
+                            outObj.add("tokenSet", tokenSetJsonObj);                // Abstract token set
+
+                            outObj.add("writtenTokenUuids", writtenTokenUuids);     // UUIDs of the written tokens
+                            outObj.add("constituentWrittenTokenUuids", constituentWrittenTokenUuids);
+                                                                                    // UUIDs of the constituent written tokens of the abstract tokens
 
                             /* Get last stroke-curator user action */
                             StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastStrokeCuratorUserAction();

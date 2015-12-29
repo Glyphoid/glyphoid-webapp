@@ -126,32 +126,43 @@
 </table>
 
 
-<div class="dropdown">
+<!--<div class="dropdown">-->
 
-    <button class="btn btn-default CommandButton" id="parseTokenSet" class="funcButton">Parse</button>
-    <button class="btn btn-default CommandButton" id="removeLastToken" class="funcButton">Delete</button>
-    <button class="btn btn-default CommandButton" id="clearPaths" class="funcButton">Clear</button>
+<button class="btn btn-default CommandButton" id="parseTokenSet" class="funcButton">Parse</button>
 
-    <!-- style="margin-right:0px; border-bottom-right-radius:0px; border-top-right-radius:0px; border-right:none;" -->
-    <!-- style="margin-left:0px; border-bottom-left-radius:0px; border-top-left-radius:0px; border-left:none;" -->
-    <button class="btn btn-default CommandButton" id="mergeLast2Strokes" class="funcButton">Merge</button>
+<span id="parseButtonGroup" class="btn-group">
+    <button class="btn btn-default dropdown-toggle" type="button" id="parseDropdown" data-toggle="dropdown">
+        <span class="caret"></span>
+    </button>
+    <ul stye="margin-left:200px;" class="dropdown-menu" role="menu" aria-labelledby="parseDropdown">
+        <li role="presentation"><a id="parseSelected" role="menuitem" tabindex="-1" href="#">Parse selected</a></li>
+    </ul>
+</span>
 
+<button class="btn btn-default CommandButton" id="removeLastToken" class="funcButton">Delete</button>
+<button class="btn btn-default CommandButton" id="clearPaths" class="funcButton">Clear</button>
+
+<!-- style="margin-right:0px; border-bottom-right-radius:0px; border-top-right-radius:0px; border-right:none;" -->
+<!-- style="margin-left:0px; border-bottom-left-radius:0px; border-top-left-radius:0px; border-left:none;" -->
+<button class="btn btn-default CommandButton" id="mergeLast2Strokes" class="funcButton">Merge</button>
+
+<span class="btn-group">
     <button class="btn btn-default dropdown-toggle" type="button" id="mergeStrokesDropdown" data-toggle="dropdown">
         <span class="caret"></span>
     </button>
-
     <ul stye="margin-left:200px;" class="dropdown-menu" role="menu" aria-labelledby="mergeStrokesDropdown">
         <li role="presentation"><a id="mergeLast2StrokesAlt" role="menuitem" tabindex="-1" href="#">Merge 2 strokes</a></li>
         <li role="presentation"><a id="mergeLast3Strokes" role="menuitem" tabindex="-1" href="#">Merge 3 strokes</a></li>
         <li role="presentation"><a id="mergeLast4Strokes" role="menuitem" tabindex="-1" href="#">Merge 4 strokes</a></li>
     </ul>
+</span>
 
-    <button class="btn btn-default CommandButton" id="unmergeLastToken" class="funcButton">Unmerge</button>
+<button class="btn btn-default CommandButton" id="unmergeLastToken" class="funcButton">Unmerge</button>
 
-    <button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
-    <button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
+<button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
+<button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
 
-</div>
+<!--</div>-->
 
 
 <table>

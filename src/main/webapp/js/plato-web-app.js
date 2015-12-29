@@ -137,14 +137,25 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
 
         /**
          * Merge tokens. Used by cursor selection merge
-         * @param tokenIndices
+         * @param tokenIndices Indices to the abstract tokens (i.e., tokens that may be node token)
          */
         var mergeStrokesByTokenIndices = function(tokenIndices) {
-            var strokeIndices = [];
-            for (var i = 0; i < tokenIndices.length; ++i) {
-                var tokenIndex = tokenIndices[i];
+            // Translate abstract token indices to written token indices
+            var wtIndices = gestureManager.abstract2WrittenTokenIndices(tokenIndices);
 
-                var strokes = gestureManager.getConstituentStrokeIndices(tokenIndex);
+            var strokeIndices = [];
+//            for (var i = 0; i < tokenIndices.length; ++i) {
+//                var tokenIndex = tokenIndices[i];
+//
+//                var strokes = gestureManager.getConstituentStrokeIndices(tokenIndex);
+//
+//                for (var j = 0; j < strokes.length; ++j) {
+//                    strokeIndices.push(strokes[j]);
+//                }
+//            }
+            for (var i = 0; i < wtIndices.length; ++i) {
+                var wtIndex = wtIndices[i];
+                var strokes = gestureManager.getConstituentStrokeIndices(wtIndex);
 
                 for (var j = 0; j < strokes.length; ++j) {
                     strokeIndices.push(strokes[j]);
@@ -293,6 +304,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
             }
         };
 
+        // Callback for parseTokenSet button
         $("#parseTokenSet").on("click", function(e) {
             e.preventDefault();
 
@@ -310,6 +322,31 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                     parseTokenSetCallback(false, null, errMsg);
                 }
             );
+        });
+
+        // Callback for parseTokenSet button
+        $("#parseSelected").on("click", function(e) {
+            e.preventDefault();
+
+            $("#parseEvalResultTableHeader").after(parserEvaluatorOutputPendingTemplate);
+
+            if (gestureManager.cursorSelectedTokenIndices.length === 0) {
+                throw new Error("Unable to perform subset parsing because no token is selected");
+            }
+
+            gestureManager.parseTokenSubset(
+                gestureManager.cursorSelectedTokenIndices,
+                function(parseResult, elapsedMillis) { /* Callback for parsing success */
+                    parseTokenSetCallback(true, {
+                        "parseResult"   : parseResult,
+                        "elapsedMillis" : elapsedMillis
+                    }, null);
+                },
+                function(errMsg) {  /* Callback for parsing failure */
+                    parseTokenSetCallback(false, null, errMsg);
+                }
+            );
+
         });
 
         /* Math ML tab */
@@ -511,6 +548,17 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 }
             });
 
+            // Button group placement
+            $("#parseDropdown").offset({
+                left: $("#parseTokenSet").offset().left + $("#parseTokenSet").width() + 26,
+                top: $("#parseTokenSet").offset().top
+            });
+
+            $("#mergeStrokesDropdown").offset({
+                left: $("#mergeLast2Strokes").offset().left + $("#mergeLast2Strokes").width() + 26,
+                top: $("#mergeLast2Strokes").offset().top
+            });
+
             $(".textDisplay").attr("disabled", true);
             $("#tokenRecogWinner").attr("disabled", true);
 
@@ -581,6 +629,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 e.preventDefault();
                 $("#mobileDownloads").modal("hide");
             });
+
 
             gestureManager.updateUIControlState();
         });

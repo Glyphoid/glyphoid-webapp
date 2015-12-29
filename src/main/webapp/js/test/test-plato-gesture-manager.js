@@ -90,6 +90,20 @@ define(["jasq", "jquery"], function (jasq, $) {
 
     describe("Tests for Plato Gesture Manager", "plato-gesture-manager", function () {
 
+        it("test abstact-to-written-token index translation", function (TouchManager) {
+            var touchManager = new TouchManager(getMockTouchManagerOptions());
+
+            expect(typeof touchManager.abstract2WrittenTokenIndices).toBe("function");
+
+            touchManager.constituentWrittenTokenUuids = [["b", "d"], ["c", "k"], ["j"]];
+            touchManager.writtenTokenUuids = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"];
+
+            expect(touchManager.abstract2WrittenTokenIndices([0])).toEqual([1, 3]);
+            expect(touchManager.abstract2WrittenTokenIndices([1])).toEqual([2, 10]);
+            expect(touchManager.abstract2WrittenTokenIndices([2])).toEqual([9]);
+
+        });
+
         it("plato-gesture-manager constructor", function (TouchManager) {
             var touchManager = new TouchManager(getMockTouchManagerOptions());
 

@@ -423,9 +423,18 @@ define(["jquery", "jquery.blockUI"], function($) {
             f(successCallback, errorCallback);
         };
 
-        /* Action: Parse token set */
+        /* Action: Parse token set (full token set parsing) */
         this.parseTokenSet = function(successCallback, errorCallback) {
             var f = engineCall.bind(self, "parse-token-set", null);
+
+            f(successCallback, errorCallback);
+        };
+
+        /* Action: Parse token set (full token set parsing) */
+        this.parseTokenSubset = function(tokenIndices, successCallback, errorCallback) {
+            var additionalData = { "tokenIndices" : tokenIndices };
+
+            var f = engineCall.bind(self, "parse-token-subset", additionalData);
 
             f(successCallback, errorCallback);
         };
