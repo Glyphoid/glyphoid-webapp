@@ -283,7 +283,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             /**
              *  Move a token, together with its constituting strokes
-             *  @param          tokenIdx: token index
+             *  @param          tokenIdx: token index (for abstract token)
              *  @param          origBounds: original bounds
              *  @param          worldDx: amount of shift along x-axis, in world coordinates
              *  @param          worldDy: amount of shift along y-axis, in world coordinates
@@ -306,10 +306,18 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 self.tokenBounds[tokenIdx][3] = origBounds[3] + worldDy;
 
                 /* Determine the constituting stroke indices */
-                var strokeIndices = self.getConstituentStrokeIndices(tokenIdx);
+                // Translate the abstract token index into written token index
+                var wtIndices = self.abstract2WrittenTokenIndices([tokenIdx]);
+                if (wtIndices.length !== 1) {
+                    throw new Error("Moving of abstract token has not been implemented yet");
+                    // TODO: Implement moving of abstract token
+                }
+                var wtIndex = wtIndices[0];
+
+                var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
 
                 /* Move the strokes */
-                var tokenIdxStr = "s" + String(tokenIdx);
+                var tokenIdxStr = "s" + String(wtIndex);
                 var origMovedStrokes = self.origMovedStrokes[tokenIdxStr];
 
                 for (var i = 0; i < strokeIndices.length; ++i) {
@@ -324,7 +332,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
             /**
              * Move token and redraw canvas
-             * @param tokenIndices
+             * @param tokenIndices     For abstract tokens
              * @param origBoundsArray
              * @param worldDx
              * @param worldDy
@@ -615,6 +623,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             var handleRightButtonDown = function(e) {
                 var canvasCoord = self.getCanvasCoordinates(e);
 
+                // This is the index to the enclosing abstract token
                 var enclosingTokenIdx = self.getEnclosingTokenIndex(canvasCoord[0], canvasCoord[1]);
 
                 if (enclosingTokenIdx === -1) {  // Not within any tokens, start FOV panning
@@ -644,13 +653,19 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     }
 
 
-
                     self.origMovedStrokes = {}; // "hashmap"
                     for (var j = 0; j < nMovedTokens; ++j) {
-                        /* Store the original strokes */
-                        var strokeIndices = self.getConstituentStrokeIndices(self.rightButtonTokenMoveIdx[j]);
+                        var wtIndices = self.abstract2WrittenTokenIndices([self.rightButtonTokenMoveIdx[j]]);
+                        if (wtIndices.length !== 1) {
+                            throw new Error("Moving of abstract token has not been implemented yet");
+                            // TODO: Implement
+                        }
+                        var wtIndex = wtIndices[0];
 
-                        var tokenIdxStr = "s" + String(self.rightButtonTokenMoveIdx[j]);
+                        /* Store the original strokes */
+                        var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
+
+                        var tokenIdxStr = "s" + String(wtIndex);
 
                         self.origMovedStrokes[tokenIdxStr] = [];
 
@@ -939,6 +954,7 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
 
                     self.lastRightButtonPos[0] = canvasCoord[0];
                     self.lastRightButtonPos[1] = canvasCoord[1];
+
                 } else if (self.rightButtonStatus === "tokenMove") {
                     var canvasCoord = self.getCanvasCoordinates(e);
 

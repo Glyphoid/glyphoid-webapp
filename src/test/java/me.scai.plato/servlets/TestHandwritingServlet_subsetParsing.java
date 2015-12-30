@@ -531,6 +531,94 @@ public class TestHandwritingServlet_subsetParsing {
 
     }
 
+    // Moving of tokens after subset parsing, then parse again
+    @Test
+    public void testTokenSubsetParsingFollowedMoveTokens() {
+
+        /* Add 1st stroke: 7 */
+        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
+                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+
+        /* Add 2nd stroke: 2 */
+        JsonObject respObjAdd1 = helper.addStroke(engineUuid,
+                "{\"numPoints\":6,\"x\":[15, 30, 30, 15, 15, 30],\"y\":[30, 30, 40, 40, 50, 50]}");
+
+        verifyWrittenTokenSet(respObjAdd1, new String[] {"7", "2"});
+        verifyAbstractTokenSet(respObjAdd1, new boolean[] {false, false}, new String[] {"7", "2"});
+
+        // First parsing: Parse only the two tokens that make up the denominator
+        JsonObject respObj0 = helper.parseTokenSubset(engineUuid, new int[]{0, 1}, helper.DEFAULT_PARSING_TIMEOUT);
+
+        verifyParserResult(respObj0, "72");
+
+        verifyWrittenTokenSet(respObj0, new String[] {"7", "2"});
+        verifyAbstractTokenSet(respObj0, new boolean[] {true}, new String[] {"72"});
+
+        /* After the subset parsing, add the 3rd stroke: - */
+        JsonObject respObjAdd2 = helper.addStroke(engineUuid,
+                "{\"numPoints\":5,\"x\":[0, 10, 20, 30, 40],\"y\":[25, 25, 25, 25, 25]}");
+
+        verifyWrittenTokenSet(respObjAdd2, new String[] {"7", "2", "-"});
+        verifyAbstractTokenSet(respObjAdd2, new boolean[] {true, false}, new String[] {"72", "-"});
+
+        /* Add the 4th stroke: - "1"  */
+        JsonObject respObjAdd3 = helper.addStroke(engineUuid,
+                "{\"numPoints\":6,\"x\":[11, 11, 11, 11, 11, 11],\"y\":[5, 7, 9, 11, 13, 15]}");
+
+        assertEquals(respObjAdd3.get("errors").getAsJsonArray().size(), 0);
+
+        verifyWrittenTokenSet(respObjAdd3, new String[] {"7", "2", "-", "1"});
+        verifyAbstractTokenSet(respObjAdd3, new boolean[] {true, false, false}, new String[] {"72", "-", "1"});
+
+        /* Add the 5th stroke: "7" */
+        JsonObject respObjAdd4 = helper.addStroke(engineUuid,
+                "{\"numPoints\":6,\"x\":[14, 16, 18, 18, 17, 16],\"y\":[5, 5, 5, 8, 12, 15]}");
+
+        verifyWrittenTokenSet(respObjAdd4, new String[] {"7", "2", "-", "1", "7"});
+        verifyAbstractTokenSet(respObjAdd4, new boolean[] {true, false, false, false}, new String[] {"72", "-", "1", "7"});
+
+        /* Parse before token moving */
+        JsonObject respObj1 = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+        verifyParserResult(respObj1, "(17 / 72)");
+
+        verifyWrittenTokenSet(respObj1, new String[] {"7", "2", "-", "1", "7"});
+        verifyAbstractTokenSet(respObj1, new boolean[] {true, false, false, false}, new String[] {"72", "-", "1", "7"});
+
+        /* Verify the bounds of the tokens */
+        JsonObject getTokenBoundsRespObj0 = helper.getTokenBounds(engineUuid, 2); // Index is to abstract token
+        verifyTokenBoundsResponse(getTokenBoundsRespObj0, new float[] {11f, 5f, 11f, 15f});
+
+        JsonObject getTokenBoundsRespObj1 = helper.getTokenBounds(engineUuid, 3); // Index is to abstract token
+        verifyTokenBoundsResponse(getTokenBoundsRespObj1, new float[] {14f, 5f, 18f, 15f});
+
+        /* Move tokens */
+        final float[] newBounds0 = new float[] {26f, 5f, 26f, 15f}; // New position for "1"
+        final float[] newBounds1 = new float[] {11f, 5f, 15f, 15f}; // New position for "7"
+
+        // Set new bounds for "1"
+        helper.moveToken(engineUuid, 2, newBounds0);
+
+        // Set new bounds for "7"
+        helper.moveToken(engineUuid, 2, newBounds1); //TODO: This may be very confusing. This is due to the fact that
+        // abstract token indices may have shifted after move token.
+        // TODO: Implement the automatic determination of the token index after abstract indices shift following moveToken
+
+        /* Verify the token bounds after the moves */
+        getTokenBoundsRespObj0 = helper.getTokenBounds(engineUuid, 2); // Index is to abstract token
+        verifyTokenBoundsResponse(getTokenBoundsRespObj0, newBounds0);
+
+        getTokenBoundsRespObj1 = helper.getTokenBounds(engineUuid, 3); // Index is to abstract token
+        verifyTokenBoundsResponse(getTokenBoundsRespObj1, newBounds1);
+
+        verifyWrittenTokenSet(getTokenBoundsRespObj1, new String[] {"7", "2", "-", "1", "7"});
+        verifyAbstractTokenSet(getTokenBoundsRespObj1, new boolean[] {true, false, false, false}, new String[] {"72", "-", "1", "7"});
+
+        /* Now that the position of 7 and 1 have been changed, parse again and verify the new parsing result */
+        JsonObject respObj2 = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+        verifyParserResult(respObj2, "(71 / 72)");
+
+    }
+
     // TODO: Test Clearing after subset parsing
     // TODO: Test Multi-token Deletion after subset parsing
     // TODO: Test Force stroke merging with stroke merging after subset parsing
@@ -598,6 +686,24 @@ public class TestHandwritingServlet_subsetParsing {
                 assertEquals(trueTokenNames[i], tokens.get(i).getAsJsonObject().get("recogWinner").getAsString());
             }
 
+        }
+
+    }
+
+    private void verifyTokenBoundsResponse(JsonObject getTokenBoundsRespObj, float[] trueBounds) {
+        final float tol = 1e-6f;
+
+        assert(trueBounds.length == 4);
+
+        assertEquals(0, getTokenBoundsRespObj.get("errors").getAsJsonArray().size());
+
+        assertTrue(getTokenBoundsRespObj.get("tokenBounds").isJsonArray());
+        JsonArray tokenBounds = getTokenBoundsRespObj.get("tokenBounds").getAsJsonArray();
+
+        assertEquals(trueBounds.length, tokenBounds.size());
+
+        for (int i = 0; i < trueBounds.length; ++i) {
+            assertEquals(trueBounds[i], tokenBounds.get(i).getAsFloat(), tol);
         }
 
     }

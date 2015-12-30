@@ -83,6 +83,30 @@ public class HandwritingServletTestHelper {
         return sendRequest(engineUuid, "remove-token", additionalData);
     }
 
+    /* Get the bounds of a token (abstract token) */
+    public JsonObject getTokenBounds(String engineUuid, int idxToken) {
+        JsonObject additionalData = new JsonObject();
+        additionalData.add("tokenIdx", new JsonPrimitive(idxToken));
+
+        return sendRequest(engineUuid, "get-token-bounds", additionalData);
+    }
+
+    /* Move a token */
+    public JsonObject moveToken(String engineUuid, int idxToken, float[] newBounds) {
+        assert(newBounds.length == 4);
+
+        JsonObject additionalData = new JsonObject();
+        additionalData.add("tokenIdx", new JsonPrimitive(idxToken));
+
+        JsonArray newBoundsArray = new JsonArray();
+        for (float b : newBounds) {
+            newBoundsArray.add(new JsonPrimitive(b));
+        }
+        additionalData.add("newBounds", newBoundsArray);
+
+        return sendRequest(engineUuid, "move-token", additionalData);
+    }
+
     /* Force set the name of a token */
     public JsonObject forceSetTokenName(String engineUuid, int idxToken, String tokenName) {
         JsonObject additionalData = new JsonObject();

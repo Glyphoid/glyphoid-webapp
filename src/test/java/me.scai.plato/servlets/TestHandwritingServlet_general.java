@@ -288,30 +288,7 @@ public class TestHandwritingServlet_general {
         assertEquals(addStrokeRespObj.get("errors").getAsJsonArray().size(), 0);
 
         /* Get token bounds */
-        MockHttpServletRequest getTokenBoundsReq = new MockHttpServletRequest();
-        MockHttpServletResponse getTokenBoundsResp = new MockHttpServletResponse();
-
-        String getTokenBoundsReqBody = "{\"action\" : \"get-token-bounds\", \"engineUuid\": \"" + engineUuid + "\"" +
-                                       ", \"tokenIdx\": 0}";
-        getTokenBoundsReq.setContent(getTokenBoundsReqBody.getBytes());
-
-        try {
-            hwServlet.doPost(getTokenBoundsReq, getTokenBoundsResp);
-        }
-        catch (IOException exc) {
-            fail(exc.getMessage());
-        }
-        catch (ServletException exc) {
-            fail(exc.getMessage());
-        }
-
-        JsonObject getTokenBoundsRespObj = null;
-        try {
-            getTokenBoundsRespObj = jsonParser.parse(getTokenBoundsResp.getContentAsString()).getAsJsonObject();
-        }
-        catch (UnsupportedEncodingException exc) {
-            fail(exc.getMessage());
-        }
+        JsonObject getTokenBoundsRespObj = helper.getTokenBounds(engineUuid, 0);
 
         assertEquals(getTokenBoundsRespObj.get("errors").getAsJsonArray().size(), 0);
         assertTrue(getTokenBoundsRespObj.has("tokenBounds"));
@@ -355,56 +332,12 @@ public class TestHandwritingServlet_general {
         assertEquals(addStrokeRespObj.get("errors").getAsJsonArray().size(), 0);
 
         /* Move token */
-        MockHttpServletRequest moveTokenReq = new MockHttpServletRequest();
-        MockHttpServletResponse moveTokenResp = new MockHttpServletResponse();
-
-        String moveTokenReqBody = "{\"action\" : \"move-token\", \"engineUuid\": \"" + engineUuid + "\"" +
-                                  ", \"tokenIdx\": 0, \"newBounds\": [193.0, 65.0, 212.0, 234.0]}";
-        moveTokenReq.setContent(moveTokenReqBody.getBytes());
-
-        try {
-            hwServlet.doPost(moveTokenReq, moveTokenResp);
-        }
-        catch (IOException exc) {
-            fail(exc.getMessage());
-        }
-        catch (ServletException exc) {
-            fail(exc.getMessage());
-        }
-
-        JsonObject moveTokenRespObj = null;
-        try {
-            moveTokenRespObj = jsonParser.parse(moveTokenResp.getContentAsString()).getAsJsonObject();
-        }
-        catch (UnsupportedEncodingException exc) {
-            fail(exc.getMessage());
-        }
+        JsonObject moveTokenRespObj = helper.moveToken(engineUuid, 0, new float[] {193f, 65f, 212f, 234f});
 
         assertEquals(moveTokenRespObj.get("errors").getAsJsonArray().size(), 0);
 
         /* Get token bounds: Verify the effect of the move */
-        MockHttpServletRequest getTokenBoundsReq = new MockHttpServletRequest();
-        MockHttpServletResponse getTokenBoundsResp = new MockHttpServletResponse();
-
-        String getTokenBoundsReqBody = "{\"action\" : \"get-token-bounds\", \"engineUuid\": \"" + engineUuid + "\"" +
-                                       ", \"tokenIdx\": 0}";
-        getTokenBoundsReq.setContent(getTokenBoundsReqBody.getBytes());
-
-        try {
-            hwServlet.doPost(getTokenBoundsReq, getTokenBoundsResp);
-        } catch (IOException exc) {
-            fail(exc.getMessage());
-        } catch (ServletException exc) {
-            fail(exc.getMessage());
-        }
-
-        JsonObject getTokenBoundsRespObj = null;
-        try {
-            getTokenBoundsRespObj = jsonParser.parse(getTokenBoundsResp.getContentAsString()).getAsJsonObject();
-        }
-        catch (UnsupportedEncodingException exc) {
-            fail(exc.getMessage());
-        }
+        JsonObject getTokenBoundsRespObj = helper.getTokenBounds(engineUuid, 0);
 
         assertEquals(getTokenBoundsRespObj.get("errors").getAsJsonArray().size(), 0);
         assertTrue(getTokenBoundsRespObj.has("tokenBounds"));
@@ -1269,7 +1202,7 @@ public class TestHandwritingServlet_general {
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Move the token */
-        JsonObject respMoveToken = moveToken(engineUuid, 0, new float[] {10, 10, 50, 30});
+        JsonObject respMoveToken = helper.moveToken(engineUuid, 0, new float[] {10, 10, 50, 30});
 
         respGetAction = getLastStrokeCuratorUserAction(engineUuid);
         assertEquals(StrokeCuratorUserAction.MoveToken.toString(),
@@ -1467,25 +1400,6 @@ public class TestHandwritingServlet_general {
 
 
     /* Private methods */
-
-
-
-
-    private JsonObject moveToken(String engineUuid, int idxToken, float[] newBounds) {
-        JsonObject additionalData = new JsonObject();
-        additionalData.add("tokenIdx", new JsonPrimitive(idxToken));
-
-        JsonArray newBoundsArray = new JsonArray();
-        for (int i = 0; i < newBounds.length; ++i) {
-            newBoundsArray.add(new JsonPrimitive(newBounds[i]));
-        }
-
-        additionalData.add("newBounds", newBoundsArray);
-
-        return helper.sendRequest(engineUuid, "move-token", additionalData);
-    }
-
-
     private JsonObject getLastStrokeCuratorUserAction(String engineUuid) {
         return helper.sendRequest(engineUuid, "get-last-stroke-curator-user-action", null);
     }
