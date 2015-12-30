@@ -6,6 +6,7 @@ import me.scai.handwriting.TokenRecogEngine;
 import me.scai.handwriting.TokenRecogEngineSDV;
 import me.scai.parsetree.*;
 
+import me.scai.plato.engine.HandwritingEngineImpl;
 import me.scai.plato.serverutils.PropertiesHelper;
 import me.scai.utilities.WorkerClientInfo;
 import me.scai.utilities.WorkerPool;

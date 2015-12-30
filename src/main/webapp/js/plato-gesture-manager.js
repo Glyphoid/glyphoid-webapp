@@ -1484,12 +1484,11 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             };
 
            this.removeSelectedTokens = function() {
-                if (self.tokenNames.length === 0) {
+                if (self.writtenTokenNames.length === 0) {
                     return;
                 }
 
                if (self.cursorSelectedTokenIndices.length > 0) {
-
                    self.removeTokens(self.cursorSelectedTokenIndices);
 
                    self.cursorSelectedTokenIndices = [];
@@ -1516,7 +1515,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 );
             };
 
-            /** Remove specified multiple tokens */
+            /** Remove specified multiple tokens
+             * @param tokenIndices   Indices to abstract token to be removed */
             this.removeTokens = function(tokenIndices) {
                 // Assume: tokenIndices is sorted in ascending order
                 if (!Array.isArray(tokenIndices)) {
@@ -1526,14 +1526,26 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 if (tokenIndices.length === 0) {
                     return;
                 }
-                var removeIdx = tokenIndices.length - 1;
 
+                // By contract, tokenIndices are for the indices of the selected abstract tokens,
+                // which need to be translated into the indices of the corresponding written tokens
+                // for the function removeToken()
+                var writtenTokenIndices = self.abstract2WrittenTokenIndices(tokenIndices);
+
+                // TODO: The assumption that writtenTokenIndices are in the ascending order will most likely break due to
+                //       Murphy's law
+                var removeIdx = writtenTokenIndices.length - 1;
+                while (removeIdx >= 0) {
+                    self.removeStrokesOfToken(writtenTokenIndices[removeIdx]);
+                    removeIdx--;
+                }
+
+                removeIdx = tokenIndices.length - 1;
                 var removeOneToken = function() {
                     self.hwEngAgent.removeToken(tokenIndices[removeIdx],
                         function(responseJSON, elapsedMillis) { /* Success in removing last token */
-                            self.removeStrokesOfToken(tokenIndices[removeIdx]);
+//                            self.removeStrokesOfToken(tokenIndices[removeIdx]);
                             removeIdx--;
-
                             self.procTokenSet(responseJSON, true);
 
                             if (removeIdx >= 0) {

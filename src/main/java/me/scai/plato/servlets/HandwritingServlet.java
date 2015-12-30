@@ -19,14 +19,15 @@ import me.scai.handwriting.CAbstractWrittenTokenSet;
 import me.scai.handwriting.CStroke;
 import me.scai.handwriting.CWrittenTokenSet;
 import me.scai.handwriting.StrokeCuratorUserAction;
-import me.scai.parsetree.HandwritingEngine;
+import me.scai.plato.engine.HandwritingEngine;
+import me.scai.plato.engine.HandwritingEngineImpl;
 import me.scai.parsetree.HandwritingEngineException;
 import me.scai.parsetree.TokenSetParserOutput;
 import me.scai.parsetree.evaluation.PlatoVarMap;
 import me.scai.parsetree.evaluation.ValueUnion;
 import me.scai.plato.helpers.CStrokeJsonHelper;
 import me.scai.plato.helpers.CWrittenTokenSetJsonHelper;
-import me.scai.plato.helpers.HandwritingEngineImpl;
+
 import me.scai.plato.helpers.HandwritingEnginePool;
 import me.scai.plato.publishers.PlatoRequestPublisher;
 import me.scai.plato.publishers.PlatoRequestPublisherS3;
