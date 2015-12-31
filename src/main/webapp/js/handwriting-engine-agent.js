@@ -359,6 +359,22 @@ define(["jquery", "jquery.blockUI"], function($) {
             f(successCallback, errorCallback);
         };
 
+        /* Action: Remove a number of (abstract) tokens */
+        this.removeTokens = function(tokenIndices, successCallback, errorCallback) {
+            /* Input sanity check */
+            if (Array.isArray()) {
+                throw "Invalid type in idxToken";
+            }
+
+            var additionalData = {
+                "tokenIndices" : tokenIndices
+            };
+
+            var f = engineCall.bind(self, "remove-tokens", additionalData);
+
+            f(successCallback, errorCallback);
+        };
+
         /* Action: Remove last token */
         this.removeLastToken = function(successCallback, errorCallback) {
             var f = engineCall.bind(self, "remove-last-token", null);

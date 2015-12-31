@@ -207,7 +207,7 @@ define(["underscore", "jquery", "dev-token-helper", "aws-helper"], function(_, $
                     var wtStr = self.devTokenHelper.actionDataAddStrokeToFileStrings([actionData], "x"); //DEBUG
 
                 } else if (actionData.action === "remove-token") {
-                    self.gestureManager.removeStrokesOfToken(actionData.idxToken);
+                    self.gestureManager.removeStrokesOfTokens([actionData.idxToken]);
                     self.gestureManager.removeToken(actionData.idxToken);
                 } else if (actionData.action === "force-set-token-name") {
                     self.gestureManager.forceSetTokenRecogWinner(actionData.tokenIdx, actionData.tokenRecogWinner);

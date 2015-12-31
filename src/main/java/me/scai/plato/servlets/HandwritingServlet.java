@@ -168,6 +168,7 @@ public class HandwritingServlet extends HttpServlet {
         final String[] dataActions = {"add-stroke",
                                       "remove-token",
                                       "remove-last-token",
+                                      "remove-tokens",
                                       "move-token",
                                       "move-multiple-tokens",
                                       "get-token-bounds",
@@ -347,6 +348,20 @@ public class HandwritingServlet extends HttpServlet {
                                 hwEng.removeLastToken();
 //                                hwEng.strokeCurator.removeLastToken();
 
+                            } else if (action.equals("remove-tokens")) { /* Remove a number of tokens */
+                                JsonArray tokenIndicesArray = reqObj.get("tokenIndices").getAsJsonArray();
+
+                                int[] tokenIndices = new int[tokenIndicesArray.size()];
+                                for (int i = 0; i < tokenIndicesArray.size(); ++i) {
+                                    tokenIndices[i] = tokenIndicesArray.get(i).getAsInt();
+                                }
+
+                                try {
+                                    hwEng.removeTokens(tokenIndices);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive(exc.getMessage()));
+                                }
+
                             } else if (action.equals("move-token")) {        /* Move a single token */
 
                                 final int tokenIdx = reqObj.get("tokenIdx").getAsInt();
@@ -368,9 +383,16 @@ public class HandwritingServlet extends HttpServlet {
                                 }
                             } else if (action.equals("move-multiple-tokens")) {        /* Move multiple tokens */
 
-                                JsonArray tokenIndices = reqObj.get("tokenIndices").getAsJsonArray();
+                                JsonArray tokenIndicesArray = reqObj.get("tokenIndices").getAsJsonArray();
                                 JsonArray newBoundsArrayJson = reqObj.get("newBoundsArray").getAsJsonArray();
 
+                                // Marshal token indices
+                                int[] tokenIndices = new int[tokenIndicesArray.size()];
+                                for (int j = 0; j < tokenIndicesArray.size(); ++j) {
+                                    tokenIndices[j] = tokenIndicesArray.get(j).getAsInt();
+                                }
+
+                                // Marshal new bounds array
                                 final float[][] newBoundsArray = new float[newBoundsArrayJson.size()][];
                                 for (int j = 0; j < newBoundsArrayJson.size(); ++j) {
                                     JsonArray newBounds = newBoundsArrayJson.get(j).getAsJsonArray();
@@ -381,18 +403,25 @@ public class HandwritingServlet extends HttpServlet {
                                     }
                                 }
 
-                                logger.info("Handling move-multiple-token request: strokeIndices length = " + tokenIndices.size());
+                                logger.info("Handling move-multiple-token request: strokeIndices length = " + tokenIndices.length);
 
-                                for (int i = 0; i < tokenIndices.size(); ++i) {
-                                    int tokenIndex = tokenIndices.get(i).getAsInt();
-
-                                    try {
-                                        hwEng.moveToken(tokenIndex, newBoundsArray[i]);
-                                    } catch (HandwritingEngineException exc) {
-                                        errors.add(new JsonPrimitive("Failed to move token " + i + " of " + tokenIndices.size() +
-                                                " due to: " + exc.getMessage()));
-                                    }
+                                // call moveTokens
+                                try {
+                                    hwEng.moveTokens(tokenIndices, newBoundsArray);
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive("Failed to move " + tokenIndices.length + " token(s) at once"));
                                 }
+
+//                                for (int i = 0; i < tokenIndices.size(); ++i) {
+//                                    int tokenIndex = tokenIndices.get(i).getAsInt();
+//
+//                                    try {
+//                                        hwEng.moveToken(tokenIndex, newBoundsArray[i]);
+//                                    } catch (HandwritingEngineException exc) {
+//                                        errors.add(new JsonPrimitive("Failed to move token " + i + " of " + tokenIndices.size() +
+//                                                " due to: " + exc.getMessage()));
+//                                    }
+//                                }
 
                             } else if (action.equals("merge-strokes-as-token")) {  /* Merge strokes as token */
                                 JsonArray mergeIndicesJson = null;
@@ -522,7 +551,7 @@ public class HandwritingServlet extends HttpServlet {
                                 hwEng.injectState(stateData);
 
                             } else if (action.equals("get-last-stroke-curator-user-action")) {
-                                StrokeCuratorUserAction strokeCuratorUserAction = hwEng.getLastStrokeCuratorUserAction();
+                                StrokeCuratorUserAction strokeCuratorUserAction = hwEng.getLastUserAction();
 
                                 if (strokeCuratorUserAction != null) {
                                     outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(strokeCuratorUserAction.toString()));
@@ -531,13 +560,13 @@ public class HandwritingServlet extends HttpServlet {
                                 }
                             } else if (action.equals("undo-stroke-curator-user-action")) {
                                 try {
-                                    hwEng.undoStrokeCuratorUserAction();
+                                    hwEng.undoUserAction();
                                 } catch (IllegalStateException exc) {
                                     errors.add(new JsonPrimitive("Cannot undo stroke curator user action"));
                                 }
                             } else if (action.equals("redo-stroke-curator-user-action")) {
                                 try {
-                                    hwEng.redoStrokeCuratorUserAction();
+                                    hwEng.redoUserAction();
                                 } catch (IllegalStateException exc) {
                                     errors.add(new JsonPrimitive("Cannot redo stroke curator user action"));
                                 }
@@ -564,7 +593,7 @@ public class HandwritingServlet extends HttpServlet {
                                                                                     // UUIDs of the constituent written tokens of the abstract tokens
 
                             /* Get last stroke-curator user action */
-                            StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastStrokeCuratorUserAction();
+                            StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastUserAction();
                             if (lastStrokeCuratorUserAction != null) {
                                 outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(lastStrokeCuratorUserAction.toString()));
                             } else {
@@ -572,8 +601,8 @@ public class HandwritingServlet extends HttpServlet {
                             }
 
                             /* Undo/redo flags */
-                            outObj.add("canUndoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canUndoStrokeCuratorUserAction()));
-                            outObj.add("canRedoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canRedoStrokeCuratorUserAction()));
+                            outObj.add("canUndoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canUndoUserAction()));
+                            outObj.add("canRedoStrokeCuratorUserAction", new JsonPrimitive(hwEng.canRedoUserAction()));
 
                             /* Get the constituent strokes of the written token set */
                             List<int[]> wtConstStrokeIndices = hwEng.getTokenConstStrokeIndices();

@@ -308,24 +308,27 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 /* Determine the constituting stroke indices */
                 // Translate the abstract token index into written token index
                 var wtIndices = self.abstract2WrittenTokenIndices([tokenIdx]);
-                if (wtIndices.length !== 1) {
-                    throw new Error("Moving of abstract token has not been implemented yet");
-                    // TODO: Implement moving of abstract token
-                }
-                var wtIndex = wtIndices[0];
+//                if (wtIndices.length !== 1) {
+//                    throw new Error("Moving of abstract token has not been implemented yet");
+//                    // TODO: Implement moving of abstract token
+//                }
 
-                var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
+                for (var n = 0; n < wtIndices.length; ++n) {
+                    var wtIndex = wtIndices[n];
 
-                /* Move the strokes */
-                var tokenIdxStr = "s" + String(wtIndex);
-                var origMovedStrokes = self.origMovedStrokes[tokenIdxStr];
+                    var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
 
-                for (var i = 0; i < strokeIndices.length; ++i) {
-                    var strokeIdx = strokeIndices[i];
+                    /* Move the strokes */
+                    var tokenIdxStr = "s" + String(wtIndex);
+                    var origMovedStrokes = self.origMovedStrokes[tokenIdxStr];
 
-                    for (var j = 0; j < self.strokes[strokeIdx].length; ++j) {
-                        self.strokes[strokeIdx][j][0] = origMovedStrokes[i][j][0] + worldDx;
-                        self.strokes[strokeIdx][j][1] = origMovedStrokes[i][j][1] + worldDy;
+                    for (var i = 0; i < strokeIndices.length; ++i) {
+                        var strokeIdx = strokeIndices[i];
+
+                        for (var j = 0; j < self.strokes[strokeIdx].length; ++j) {
+                            self.strokes[strokeIdx][j][0] = origMovedStrokes[i][j][0] + worldDx;
+                            self.strokes[strokeIdx][j][1] = origMovedStrokes[i][j][1] + worldDy;
+                        }
                     }
                 }
             };
@@ -591,7 +594,6 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     self.pts.push(worldCoord);
 
                     if (self.options.markStrokeOnset) {
-//                    ctx.fillRect(self.pts[0][0], self.pts[0][1], 3, 3);
                         ctx.fillRect(canvasCoord[0], canvasCoord[1], 3, 3);
                     }
 
@@ -606,16 +608,15 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 e.preventDefault();
 
                 var canvasCoord = self.getCanvasCoordinates(e);
-                var tokenIdx = self.getEnclosingTokenIndex(canvasCoord[0], canvasCoord[1]);
+                var tokenIdx = self.getEnclosingTokenIndex(canvasCoord[0], canvasCoord[1]); // Abstract token index
 
                 if (tokenIdx >= 0) {
                     console.log("Middle-button deletion: " + tokenIdx); //DEBUG
 
                     /* Remove the front-end strokes that belong to the selected token */
-                    self.removeStrokesOfToken(tokenIdx);
 
-                    // INSERT
-                    self.removeToken(tokenIdx);
+//                    self.removeStrokesOfTokens([self.abstract2WrittenTokenIndices([tokenIdx])]);
+                    self.removeTokens([tokenIdx]);
                 }
             };
 
@@ -656,23 +657,25 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     self.origMovedStrokes = {}; // "hashmap"
                     for (var j = 0; j < nMovedTokens; ++j) {
                         var wtIndices = self.abstract2WrittenTokenIndices([self.rightButtonTokenMoveIdx[j]]);
-                        if (wtIndices.length !== 1) {
-                            throw new Error("Moving of abstract token has not been implemented yet");
-                            // TODO: Implement
-                        }
-                        var wtIndex = wtIndices[0];
+//                        if (wtIndices.length !== 1) {
+//                            throw new Error("Moving of abstract token has not been implemented yet");
+//                            // TODO: Implement
+//                        }
 
-                        /* Store the original strokes */
-                        var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
+                        for (var n = 0; n < wtIndices.length; ++n) {
+                            var wtIndex = wtIndices[n];
 
-                        var tokenIdxStr = "s" + String(wtIndex);
+                            /* Store the original strokes */
+                            var strokeIndices = self.getConstituentStrokeIndices(wtIndex);
 
-                        self.origMovedStrokes[tokenIdxStr] = [];
+                            var tokenIdxStr = "s" + String(wtIndex);
 
-                        for (var i = 0; i < strokeIndices.length; ++i) {
-                            var strokeIdx = strokeIndices[i];
+                            self.origMovedStrokes[tokenIdxStr] = [];
+                            for (var i = 0; i < strokeIndices.length; ++i) {
+                                var strokeIdx = strokeIndices[i];
 
-                            self.origMovedStrokes[tokenIdxStr].push(_.map(self.strokes[strokeIdx], _.clone)); // Deep copy
+                                self.origMovedStrokes[tokenIdxStr].push(_.map(self.strokes[strokeIdx], _.clone)); // Deep copy
+                            }
                         }
                     }
 
@@ -1467,13 +1470,21 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 }
             };
 
-            /* Remove the front-end strokes that belong a specific token */
-            this.removeStrokesOfToken = function(tokenIdx) {
+            /** Remove the front-end strokes that belong a specific array of (written) tokens
+             * @param tokenIndices    Index to written token to be removed
+             */
+            this.removeStrokesOfTokens = function(tokenIndices) {
                 var preserveIdx = [];
                 for (var i = 0; i < self.strokeTokenOwners.length; ++i) {
-                    if (self.strokeTokenOwners[i] !== tokenIdx) {
+                    var strokeOwner = self.strokeTokenOwners[i];
+
+                    if (tokenIndices.indexOf(strokeOwner) === -1) {
                         preserveIdx.push(i);
                     }
+
+//                    if (self.strokeTokenOwners[i] !== tokenIndices) {
+//                        preserveIdx.push(i);
+//                    }
                 }
 
                 var N = preserveIdx.length;
@@ -1487,6 +1498,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 self.strokes = newStrokes;
                 self.newStrokeBounds = newStrokeBounds;
             };
+
+
 
             /* Remove the last token in the token set.
              *   This involves a call to the back-end engine */
@@ -1514,22 +1527,19 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             /**
              * Remove specified token
              */
-            this.removeToken = function(tokenIdx) {
-                self.hwEngAgent.removeToken(tokenIdx,
-                    function(responseJSON, elapsedMillis) { /* Success in removing last token */
-//                            console.log("Removal of token (idxToken = " + tokenIdx +
-//                                        ") was successful: responseJSON =", responseJSON);
-
-                        self.procTokenSet(responseJSON, true);
-
-                        self.redraw();
-                    },
-                    function() {             /* Failure in removing last token */
-                        console.log("Removal of token (idxToken = " + tokenIdx +
-                            ") failed.");
-                    }
-                );
-            };
+//            this.removeToken = function(tokenIdx) {
+//                self.hwEngAgent.removeToken(tokenIdx,
+//                    function(responseJSON, elapsedMillis) { /* Success in removing last token */
+//                        self.procTokenSet(responseJSON, true);
+//
+//                        self.redraw();
+//                    },
+//                    function() {             /* Failure in removing last token */
+//                        console.log("Removal of token (idxToken = " + tokenIdx +
+//                            ") failed.");
+//                    }
+//                );
+//            };
 
             /** Remove specified multiple tokens
              * @param tokenIndices   Indices to abstract token to be removed */
@@ -1548,35 +1558,19 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 // for the function removeToken()
                 var writtenTokenIndices = self.abstract2WrittenTokenIndices(tokenIndices);
 
-                // TODO: The assumption that writtenTokenIndices are in the ascending order will most likely break due to
-                //       Murphy's law
-                var removeIdx = writtenTokenIndices.length - 1;
-                while (removeIdx >= 0) {
-                    self.removeStrokesOfToken(writtenTokenIndices[removeIdx]);
-                    removeIdx--;
-                }
+                self.removeStrokesOfTokens(writtenTokenIndices);
 
-                removeIdx = tokenIndices.length - 1;
-                var removeOneToken = function() {
-                    self.hwEngAgent.removeToken(tokenIndices[removeIdx],
-                        function(responseJSON, elapsedMillis) { /* Success in removing last token */
-//                            self.removeStrokesOfToken(tokenIndices[removeIdx]);
-                            removeIdx--;
-                            self.procTokenSet(responseJSON, true);
+                self.hwEngAgent.removeTokens(tokenIndices,
+                    function(responseJSON, elapsedMillis) { /* Success in removing last token */
+                        self.procTokenSet(responseJSON, true);
 
-                            if (removeIdx >= 0) {
-                                removeOneToken();
-                            } else {
-                                self.redraw();
-                            }
-                        },
-                        function() {             /* Failure in removing last token */
-                            throw new Error("removeTokens failed");
-                        }
-                    );
-                };
+                        self.redraw();
+                    },
+                    function() {             /* Failure in removing last token */
+                        throw new Error("removeTokens failed");
+                    }
+                );
 
-                removeOneToken();
             };
 
 
