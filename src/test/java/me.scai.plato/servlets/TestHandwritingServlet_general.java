@@ -1,7 +1,7 @@
 package me.scai.plato.servlets;
 
 import com.google.gson.*;
-import me.scai.handwriting.StrokeCuratorUserAction;
+import me.scai.handwriting.HandwritingEngineUserAction;
 import me.scai.parsetree.MathHelper;
 import me.scai.plato.servlets.HandwritingServletTestHelper;
 import org.junit.After;
@@ -213,7 +213,7 @@ public class TestHandwritingServlet_general {
         assertEquals(constStrokes0.size(), 1);
         assertEquals(constStrokes0.get(0).getAsInt(), 0);
 
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(), respObj.get("lastStrokeCuratorUserAction").getAsString());
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(), respObj.get("lastStrokeCuratorUserAction").getAsString());
         assertTrue(respObj.get("canUndoStrokeCuratorUserAction").getAsBoolean());
         assertFalse(respObj.get("canRedoStrokeCuratorUserAction").getAsBoolean());
 
@@ -252,7 +252,7 @@ public class TestHandwritingServlet_general {
         constituentStrokes = respObjClear.get("constituentStrokes").getAsJsonArray();
         assertEquals(constituentStrokes.size(), 0);
 
-        assertEquals(StrokeCuratorUserAction.ClearStrokes.toString(), respObjClear.get("lastStrokeCuratorUserAction").getAsString());
+        assertEquals(HandwritingEngineUserAction.ClearStrokes.toString(), respObjClear.get("lastStrokeCuratorUserAction").getAsString());
         assertTrue(respObjClear.get("canUndoStrokeCuratorUserAction").getAsBoolean());
         assertFalse(respObjClear.get("canRedoStrokeCuratorUserAction").getAsBoolean());
     }
@@ -1184,7 +1184,7 @@ public class TestHandwritingServlet_general {
         /* Verify get-last-stroke-curator-user-action */
         JsonObject respGetAction = getLastStrokeCuratorUserAction(engineUuid);
 
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      respGetAction.get("lastStrokeCuratorUserAction").getAsString());
 
         /* Undo add stroke */
@@ -1198,14 +1198,14 @@ public class TestHandwritingServlet_general {
         JsonObject respRedo = redoStrokeCuratorUserAction(engineUuid);
 
         assertEquals(state0, gson.toJson(respRedo.get("writtenTokenSet").getAsJsonObject()));   // After the redo, the state should have been restored to the state right after the first add-stroke request
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Move the token */
         JsonObject respMoveToken = helper.moveToken(engineUuid, 0, new float[] {10, 10, 50, 30});
 
         respGetAction = getLastStrokeCuratorUserAction(engineUuid);
-        assertEquals(StrokeCuratorUserAction.MoveToken.toString(),
+        assertEquals(HandwritingEngineUserAction.MoveToken.toString(),
                      respGetAction.get("lastStrokeCuratorUserAction").getAsString());
 
         tokens = respMoveToken.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
@@ -1222,7 +1222,7 @@ public class TestHandwritingServlet_general {
         respUndo = undoStrokeCuratorUserAction(engineUuid);
 
         respGetAction = getLastStrokeCuratorUserAction(engineUuid);
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      respGetAction.get("lastStrokeCuratorUserAction").getAsString());
 
         tokens = respUndo.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
@@ -1239,7 +1239,7 @@ public class TestHandwritingServlet_general {
         respRedo = redoStrokeCuratorUserAction(engineUuid);
 
         respGetAction = getLastStrokeCuratorUserAction(engineUuid);
-        assertEquals(StrokeCuratorUserAction.MoveToken.toString(),
+        assertEquals(HandwritingEngineUserAction.MoveToken.toString(),
                      respGetAction.get("lastStrokeCuratorUserAction").getAsString());
 
         tokens = respRedo.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
@@ -1262,7 +1262,7 @@ public class TestHandwritingServlet_general {
         JsonArray tokens1 = respForceSet.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
         assertEquals("W", tokens1.get(0).getAsJsonObject().get("recogWinner").getAsString());
 
-        assertEquals(StrokeCuratorUserAction.ForceSetTokenName.toString(),
+        assertEquals(HandwritingEngineUserAction.ForceSetTokenName.toString(),
                 getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Undo force set token name */
@@ -1270,7 +1270,7 @@ public class TestHandwritingServlet_general {
 
         /* After the undo, the last user action should be add-stroke */
         respGetAction = getLastStrokeCuratorUserAction(engineUuid);
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* The undo should have set the token name back to "V" */
@@ -1286,7 +1286,7 @@ public class TestHandwritingServlet_general {
                 "{\"numPoints\":3,\"x\":[50, 55, 60],\"y\":[15, 15, 15]}");
         String state2 = gson.toJson(respAdd2.get("writtenTokenSet").getAsJsonObject());
 
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                 getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         tokens1 = respAdd2.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
@@ -1298,14 +1298,14 @@ public class TestHandwritingServlet_general {
         respUndo = undoStrokeCuratorUserAction(engineUuid);
 
         assertEquals(state1, gson.toJson(respUndo.get("writtenTokenSet").getAsJsonObject()));
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Redo the 3rd stroke */
         respRedo = redoStrokeCuratorUserAction(engineUuid);
 
         assertEquals(state2, gson.toJson(respRedo.get("writtenTokenSet").getAsJsonObject()));
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Force unmerge the "=" token */
@@ -1317,13 +1317,13 @@ public class TestHandwritingServlet_general {
         assertEquals("-", tokens1.get(1).getAsJsonObject().get("recogWinner").getAsString());
         assertEquals("-", tokens1.get(2).getAsJsonObject().get("recogWinner").getAsString());
 
-        assertEquals(StrokeCuratorUserAction.MergeStrokesAsToken.toString(),
+        assertEquals(HandwritingEngineUserAction.MergeStrokesAsToken.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Undo the unmerge */
         respUndo = undoStrokeCuratorUserAction(engineUuid);
 
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
         assertEquals(state2, gson.toJson(respUndo.get("writtenTokenSet").getAsJsonObject()));
 
@@ -1331,12 +1331,12 @@ public class TestHandwritingServlet_general {
         for (int i = 0; i < 3; ++i) {
             respRedo = redoStrokeCuratorUserAction(engineUuid);
 
-            assertEquals(StrokeCuratorUserAction.MergeStrokesAsToken.toString(),
+            assertEquals(HandwritingEngineUserAction.MergeStrokesAsToken.toString(),
                     getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
             respUndo = undoStrokeCuratorUserAction(engineUuid);
 
-            assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+            assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                          getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
             assertEquals(state2, gson.toJson(respUndo.get("writtenTokenSet").getAsJsonObject()));
         }
@@ -1347,14 +1347,14 @@ public class TestHandwritingServlet_general {
         tokens1 = respClear.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
         assertEquals(0, tokens1.size());
 
-        assertEquals(StrokeCuratorUserAction.ClearStrokes.toString(),
+        assertEquals(HandwritingEngineUserAction.ClearStrokes.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Undo the clear */
         respUndo = undoStrokeCuratorUserAction(engineUuid);
 
         assertEquals(state2, gson.toJson(respUndo.get("writtenTokenSet").getAsJsonObject()));
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Add the 4th stroke: c */
@@ -1362,7 +1362,7 @@ public class TestHandwritingServlet_general {
 
         tokens1 = respAdd3.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
         assertEquals(3, tokens1.size());
-        assertEquals(StrokeCuratorUserAction.AddStroke.toString(),
+        assertEquals(HandwritingEngineUserAction.AddStroke.toString(),
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Clear all strokes, again */

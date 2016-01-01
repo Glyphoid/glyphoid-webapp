@@ -15,10 +15,7 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import com.google.gson.*;
-import me.scai.handwriting.CAbstractWrittenTokenSet;
-import me.scai.handwriting.CStroke;
-import me.scai.handwriting.CWrittenTokenSet;
-import me.scai.handwriting.StrokeCuratorUserAction;
+import me.scai.handwriting.*;
 import me.scai.plato.engine.HandwritingEngine;
 import me.scai.plato.engine.HandwritingEngineImpl;
 import me.scai.parsetree.HandwritingEngineException;
@@ -496,7 +493,7 @@ public class HandwritingServlet extends HttpServlet {
                                                  TokenSetParserOutput parserResult = null;
                                                  try {
                                                      if (isSubsetParsing) {
-                                                         parserResult = hwEng0.parseTokenSet(tokenIndices);
+                                                         parserResult = hwEng0.parseTokenSubset(tokenIndices);
                                                      } else {
                                                          parserResult = hwEng0.parseTokenSet();
                                                      }
@@ -551,10 +548,10 @@ public class HandwritingServlet extends HttpServlet {
                                 hwEng.injectState(stateData);
 
                             } else if (action.equals("get-last-stroke-curator-user-action")) {
-                                StrokeCuratorUserAction strokeCuratorUserAction = hwEng.getLastUserAction();
+                                HandwritingEngineUserAction userAction = hwEng.getLastUserAction();
 
-                                if (strokeCuratorUserAction != null) {
-                                    outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(strokeCuratorUserAction.toString()));
+                                if (userAction != null) {
+                                    outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(userAction.toString()));
                                 } else {
                                     outObj.add("lastStrokeCuratorUserAction", null);
                                 }
@@ -593,9 +590,9 @@ public class HandwritingServlet extends HttpServlet {
                                                                                     // UUIDs of the constituent written tokens of the abstract tokens
 
                             /* Get last stroke-curator user action */
-                            StrokeCuratorUserAction lastStrokeCuratorUserAction =  hwEng.getLastUserAction();
-                            if (lastStrokeCuratorUserAction != null) {
-                                outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(lastStrokeCuratorUserAction.toString()));
+                            HandwritingEngineUserAction lastUserAction =  hwEng.getLastUserAction();
+                            if (lastUserAction != null) {
+                                outObj.add("lastStrokeCuratorUserAction", new JsonPrimitive(lastUserAction.toString()));
                             } else {
                                 outObj.add("lastStrokeCuratorUserAction", new JsonNull());
                             }
