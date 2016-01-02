@@ -71,17 +71,27 @@ public class HandwritingServlet extends HttpServlet {
 
         /* Obtain S3 request publisher instance */
 //        s3BucketNameForRequestLogging = getS3BucketNameForRequestLogging();
-        s3RequestPublisher = PlatoRequestPublisherS3.createOrGetInstance(hwEngPool.getWorkersClientInfo());
+        try {
+            s3RequestPublisher = PlatoRequestPublisherS3.createOrGetInstance(hwEngPool.getWorkersClientInfo());
+        } catch (Exception e) {
+            logger.warning("Failed to create S3 request publisher, due to " + e.getMessage());
+        }
 
     }
 
     @Override
     public void destroy() {
-        logger.info("Calling destroy() of s3RequestPublisher");
+        if (s3RequestPublisher != null) {
+            logger.info("Calling destroy() of s3RequestPublisher");
 
-        s3RequestPublisher.destroy();
+            try {
+                s3RequestPublisher.destroy();
+            } catch (Exception e) {
+                logger.severe("Failed to destroy S3 request publisher, due to " + e.getMessage());
+            }
 
-        logger.info("Done calling destroy() of s3RequestPublisher");
+            logger.info("Done calling destroy() of s3RequestPublisher");
+        }
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -245,7 +255,7 @@ public class HandwritingServlet extends HttpServlet {
                     outObj.add("engineUuid", new JsonNull());
                 }
             } else if (action.equals("remove-engine")) {
-                if (toPublish(reqObj)) {
+                if (toPublish(reqObj) && s3RequestPublisher != null) {
                     s3RequestPublisher.publishRemoveEngineRequest(reqObj);
                 }
 
@@ -629,7 +639,7 @@ public class HandwritingServlet extends HttpServlet {
         out.close();
 
         /* Log request to S3 */
-        if (toPublish(reqObj)) {
+        if (toPublish(reqObj) && s3RequestPublisher != null) {
             String objKey = null;
             if (isCreateEngine) { /* TODO: Do not use two booleans */
                 objKey = s3RequestPublisher.publishCreateEngineRequest(reqObj, clientIPAddress, clientHostName, engUuid);

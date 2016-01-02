@@ -90,7 +90,9 @@ public class PlatoRequestPublisherS3 implements PlatoRequestPublisher {
     /* Singleton access */
     public static PlatoRequestPublisherS3 createOrGetInstance(Map<String, WorkerClientInfo> workersClientInfo) {
         if (instance == null) {
+
             instance = new PlatoRequestPublisherS3(workersClientInfo);
+
         }
 
         return instance;
