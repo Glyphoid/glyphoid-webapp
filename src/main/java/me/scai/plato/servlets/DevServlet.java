@@ -28,11 +28,10 @@ public class DevServlet extends HttpServlet {
 
     @Override
     public void init(ServletConfig servletConfig) {
-        Properties props = PropertiesHelper.getNestedProperties("secretsPropertiesFile");
-
         try {
-            logger.info("DevServlet: getProperty enableDevServlet = " + props.getProperty("enableDevServlet"));
-            enabled = Boolean.parseBoolean(props.getProperty("enableDevServlet"));
+            logger.info("DevServlet: getProperty enableDevServlet = " +
+                    PropertiesHelper.getPropertyByName("enableDevServlet"));
+            enabled = Boolean.parseBoolean(PropertiesHelper.getPropertyByName("enableDevServlet"));
             logger.info("DevServlet: enabled = " + enabled);
         } catch (Exception e) {
             logger.severe("Failed to read property enableDevServlet");

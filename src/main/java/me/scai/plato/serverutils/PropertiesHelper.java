@@ -1,17 +1,19 @@
 package me.scai.plato.serverutils;
 
-import me.scai.plato.helpers.PlatoHelper;
-
 import java.io.*;
 import java.util.Properties;
 import java.util.logging.Logger;
 
 public final class PropertiesHelper {
+    /* Constants */
     private static final String propFileName = "plato.properties";
+
+    private static final String ASSET_ROOT_PLACE_HOLDER = "${assetRoot}";
 
     private static final Logger logger = Logger.getLogger(PropertiesHelper.class.getName());
 
-    public static final Properties getProperties() {
+    /* Methods */
+    private static final Properties getProperties() {
         Properties props = new Properties();
         InputStream inStream = PropertiesHelper.class.getClassLoader().getResourceAsStream(propFileName);
 
@@ -28,16 +30,31 @@ public final class PropertiesHelper {
         return props;
     }
 
+    public static final String getPropertyByName(String propName) {
+        Properties props = getProperties();
+        String propVal = props.getProperty(propName);
+
+        if (propVal.indexOf(ASSET_ROOT_PLACE_HOLDER) != -1) {
+            String sysAssetRoot = System.getProperty("assetRoot");
+
+            if (sysAssetRoot == null) {
+                throw new IllegalStateException("Property " + propName + " requires system property assetRoot, but assetRoot is not set");
+            }
+
+            propVal = propVal.replace(ASSET_ROOT_PLACE_HOLDER, sysAssetRoot);
+        }
+
+        return propVal;
+    }
+
 
 
     public static final Properties getNestedProperties(String nestedPropFileNamePrefix) {
         Properties props = getProperties();
 
-        String osSuffix = PlatoHelper.getOSSuffix();
+        final String propName = nestedPropFileNamePrefix;
 
-        final String propName = nestedPropFileNamePrefix + osSuffix;
-
-        String platoAwsPropertiesFileName = props.getProperty(propName);
+        String platoAwsPropertiesFileName = getPropertyByName(propName);
 
         Properties nestedProps = new Properties();
 

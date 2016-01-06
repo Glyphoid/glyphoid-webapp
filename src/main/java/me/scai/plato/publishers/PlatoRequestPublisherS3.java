@@ -10,14 +10,12 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import me.scai.plato.helpers.PlatoHelper;
 import me.scai.plato.serverutils.PropertiesHelper;
 import me.scai.utilities.WorkerClientInfo;
 import me.scai.utilities.clienttypes.ClientTypeMajor;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
@@ -101,6 +99,11 @@ public class PlatoRequestPublisherS3 implements PlatoRequestPublisher {
     /* Constructors */
     private PlatoRequestPublisherS3(Map<String, WorkerClientInfo> workersClientInfo) {
         PlatoRequestPublisherS3Config config = getPlatoRequestPublisherS3Config();
+
+        if (config == null) {
+            logger.info("AWS properties not configured. S3 Request Publisher will be inactive");
+            return;
+        }
 
         /* Set time zone info */
         final TimeZone utcTimeZone = TimeZone.getTimeZone(TIME_ZONE);
@@ -195,6 +198,10 @@ public class PlatoRequestPublisherS3 implements PlatoRequestPublisher {
 
     @Override
     public String publishGeneralRequest(JsonObject reqObj) {
+        if (s3Client == null) {
+            return null;
+        }
+
         String engineId = getRequestEngineId(reqObj);
         if (engineId == null) {
             logger.severe("Failed to obtain engine ID from request. Publishing aborted.");
@@ -365,18 +372,25 @@ public class PlatoRequestPublisherS3 implements PlatoRequestPublisher {
         return noPublishClientTypeMajorList.contains(clientTypeMajor);
     }
 
-    /* Obtain s3 bucket name for request loggin */
+    /* Obtain s3 bucket name for request logging */
     private PlatoRequestPublisherS3Config getPlatoRequestPublisherS3Config() {
         Properties platoAwsProps = PropertiesHelper.getNestedProperties("awsPropertiesFile");
 
-        final String awsS3BucketNameForRequestLogging = platoAwsProps.getProperty("awsS3BucketNameForRequestLogging");
-        final String awsAccessKey = platoAwsProps.getProperty("awsAccessKey");
-        final String awsSecretKey = platoAwsProps.getProperty("awsSecretKey");
+        PlatoRequestPublisherS3Config config;
+        if (platoAwsProps != null) {
+            final String awsS3BucketNameForRequestLogging = platoAwsProps.getProperty("awsS3BucketNameForRequestLogging");
+            final String awsAccessKey = platoAwsProps.getProperty("awsAccessKey");
+            final String awsSecretKey = platoAwsProps.getProperty("awsSecretKey");
 
-        logger.info("S3 bucket name for request logging: \"" + awsS3BucketNameForRequestLogging + "\"");
+            logger.info("S3 bucket name for request logging: \"" + awsS3BucketNameForRequestLogging + "\"");
 
-        return new PlatoRequestPublisherS3Config(awsS3BucketNameForRequestLogging,
-                                                 awsAccessKey,
-                                                 awsSecretKey);
+            config = new PlatoRequestPublisherS3Config(awsS3BucketNameForRequestLogging,
+                    awsAccessKey,
+                    awsSecretKey);
+        } else {
+            config = null;
+        }
+
+        return config;
     }
 }

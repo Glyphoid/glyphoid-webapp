@@ -57,7 +57,8 @@ public class HandwritingServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         parsingTimeoutMillis =
-                Long.parseLong(PropertiesHelper.getProperties().getProperty("handwritingEngineTimeoutMillis"));
+                Long.parseLong(PropertiesHelper.getPropertyByName("handwritingEngineTimeoutMillis"));
+
         logger.info("Parsing timeout = " + parsingTimeoutMillis + " ms");
 
         try {

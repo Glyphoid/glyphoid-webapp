@@ -6,7 +6,6 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -17,15 +16,12 @@ import javax.servlet.http.HttpServletResponse;
 import me.scai.handwriting.CWrittenToken;
 import me.scai.handwriting.TokenRecogEngine;
 import me.scai.handwriting.TokenRecogEngineSDV;
-import me.scai.plato.helpers.PlatoHelper;
 import me.scai.plato.security.BypassSecurity;
 import me.scai.plato.serverutils.PropertiesHelper;
 
 public class TokenRecogServlet extends HttpServlet {
     private static final Logger logger = Logger.getLogger(TokenRecogServlet.class.getName());
     private static final Gson gson = new Gson();
-
-    private Properties props;
 
     private TokenRecogEngine tokEngine;
     private ArrayList<String> tokNames;
@@ -35,9 +31,7 @@ public class TokenRecogServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-        props = PropertiesHelper.getProperties();
-
-        String tokEngSerFN = props.getProperty("tokenEngineSerFile" + PlatoHelper.getOSSuffix()) ;
+        String tokEngSerFN = PropertiesHelper.getPropertyByName("tokenEngineSerFile");
         URL tokenEngineSerURL = null;
         try {
             tokenEngineSerURL = new File(tokEngSerFN).toURI().toURL();

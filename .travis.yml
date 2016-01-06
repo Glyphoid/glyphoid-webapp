@@ -9,13 +9,13 @@ install:
   - mkdir /home/travis/math-handwriting-lib
   - git clone https://github.com/Glyphoid/math-handwriting-lib /home/travis/math-handwriting-lib
   - mvn -f /home/travis/math-handwriting-lib/pom.xml clean install -DtokenSetPathPrefix=/home/travis/tokensets/TS_
-  - mkdir -p /opt/plato-server/token-engine
-  - mkdir -p /opt/plato-server/token-set-parser
-  - mkdir -p /opt/plato-server/stroke-curator
-  - cp /home/travis/math-handwriting-lib/src/main/resources/token_engine/token_engine.sdv.sz0_whr1_ns1.ser /opt/plato-server/token-engine/
-  - cp /home/travis/math-handwriting-lib/src/main/resources/config/terminals.json /opt/plato-server/token-set-parser/
-  - cp /home/travis/math-handwriting-lib/src/main/resources/config/productions.txt /opt/plato-server/token-set-parser/
-  - cp /home/travis/math-handwriting-lib/src/main/resources/config/stroke_curator_config.json /opt/plato-server/stroke-curator/
+  - mkdir -p /home/travis/plato-server/token-engine
+  - mkdir -p /home/travis/plato-server/token-set-parser
+  - mkdir -p /home/travis/plato-server/stroke-curator
+  - cp /home/travis/math-handwriting-lib/src/main/resources/token_engine/token_engine.sdv.sz0_whr1_ns1.ser /home/travis/plato-server/token-engine/
+  - cp /home/travis/math-handwriting-lib/src/main/resources/config/terminals.json /home/travis/plato-server/token-set-parser/
+  - cp /home/travis/math-handwriting-lib/src/main/resources/config/productions.txt /home/travis/plato-server/token-set-parser/
+  - cp /home/travis/math-handwriting-lib/src/main/resources/config/stroke_curator_config.json /home/travis/plato-server/stroke-curator/
 
 script:
-  - mvn test -B
+  - mvn test -B -DassetRoot=/home/travis/plato-server

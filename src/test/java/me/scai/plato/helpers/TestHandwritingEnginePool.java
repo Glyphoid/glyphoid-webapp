@@ -26,9 +26,7 @@ public class TestHandwritingEnginePool {
     private WorkerClientInfo wkrClientInfo;
 
     private int getMaxNumHandwritingEngines() {
-        Properties props = PropertiesHelper.getProperties();
-
-        return Integer.parseInt(props.getProperty("maxNumHandwritingEngines"));
+        return Integer.parseInt(PropertiesHelper.getPropertyByName("maxNumHandwritingEngines"));
     }
 
     @Before

@@ -7,7 +7,6 @@ package me.scai.plato.helpers;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.scai.handwriting.AbstractToken;
-import me.scai.handwriting.CWrittenToken;
 import me.scai.handwriting.CWrittenTokenSet;
 import org.junit.Test;
 

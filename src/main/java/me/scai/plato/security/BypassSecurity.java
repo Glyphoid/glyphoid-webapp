@@ -1,7 +1,6 @@
 package me.scai.plato.security;
 
 import com.google.gson.JsonObject;
-import me.scai.plato.helpers.PlatoHelper;
 import me.scai.plato.serverutils.PropertiesHelper;
 
 import java.io.*;

@@ -29,9 +29,6 @@ public class HandwritingEnginePool {
     /* Members */
     private static final Logger logger = Logger.getLogger(HandwritingEnginePool.class.getName());
 
-    private Properties props;
-    private String osSuffix;
-
     private static int maxNumHandwritingEngines;
     private static long handwritingEngineTimeoutMillis;
 
@@ -47,23 +44,17 @@ public class HandwritingEnginePool {
     /* Methods */
     /* Constructor */
     public HandwritingEnginePool() throws IOException {
-        /* Detect OS */
-        osSuffix = PlatoHelper.getOSSuffix();
-        logger.info("Determined OS suffix: " + osSuffix);
-
-        props = PropertiesHelper.getProperties();
-
         /* Get the value of recursionGeomScoreRatioThresh */
-        recursionGeomScoreRatioThresh = Float.parseFloat(props.getProperty("recursionGeomScoreRatioThresh"));
+        recursionGeomScoreRatioThresh = Float.parseFloat(PropertiesHelper.getPropertyByName("recursionGeomScoreRatioThresh"));
 
         /* Get the value of maxNumHandwritingEngines */
-        maxNumHandwritingEngines = Integer.parseInt(props.getProperty("maxNumHandwritingEngines"));
+        maxNumHandwritingEngines = Integer.parseInt(PropertiesHelper.getPropertyByName("maxNumHandwritingEngines"));
         if (maxNumHandwritingEngines <= 0) {
             logger.warning("Detected unreasonable value in maxNumHandwritingEngines: " +
                            maxNumHandwritingEngines);
         }
 
-        handwritingEngineTimeoutMillis = Long.parseLong(props.getProperty("handwritingEngineTimeoutMillis"));
+        handwritingEngineTimeoutMillis = Long.parseLong(PropertiesHelper.getPropertyByName("handwritingEngineTimeoutMillis"));
         if (handwritingEngineTimeoutMillis <= 0) {
             logger.warning("Detected unreasonable value in handwritingEngineTimeoutMillis: " +
                     handwritingEngineTimeoutMillis);
@@ -74,7 +65,7 @@ public class HandwritingEnginePool {
         this.workerPool = createOrGetWorkerPool();
 
         /* Get terminal set, this is shared among all instances of the token-set parser */
-        String termSetFN = props.getProperty("terminalsDefinitionFile" + osSuffix);
+        String termSetFN = PropertiesHelper.getPropertyByName("terminalsDefinitionFile");
         URL termSetUrl = new File(termSetFN).toURI().toURL();
         logger.info("Properties file indicates that terminal set file is at: \"" + termSetUrl + "\"");
 
@@ -87,7 +78,7 @@ public class HandwritingEnginePool {
         }
 
         /* Get the graphical production set */
-        String gpSetFN = props.getProperty("productionsDefinitionFile" + osSuffix);
+        String gpSetFN = PropertiesHelper.getPropertyByName("productionsDefinitionFile");
         URL gpSetUrl = new File(gpSetFN).toURI().toURL();
         logger.info("Properties file indicates that graphical production file is at: \"" + gpSetUrl + "\"");
 
@@ -101,7 +92,7 @@ public class HandwritingEnginePool {
 
     /* Create a stroke curator */
     private StrokeCurator genStrokeCurator() {
-        String strokeCuratorConfigFN = props.getProperty("strokeCuratorConfigFile" + osSuffix);
+        String strokeCuratorConfigFN = PropertiesHelper.getPropertyByName("strokeCuratorConfigFile");
 
         URL strokeCuratorConfigFileURL = null;
         try {
@@ -126,7 +117,7 @@ public class HandwritingEnginePool {
     private TokenRecogEngine genTokenRecogEngine() {
         TokenRecogEngine tokEngine = null;
 
-        String tokenEngineFN = props.getProperty("tokenEngineSerFile" + osSuffix);
+        String tokenEngineFN = PropertiesHelper.getPropertyByName("tokenEngineSerFile");
         logger.info("Properties file indicates that token engine serialization file is at: \"" + tokenEngineFN + "\"");
 
         ObjectInputStream objInStream = null;
