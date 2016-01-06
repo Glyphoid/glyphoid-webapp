@@ -26,6 +26,7 @@ import me.scai.plato.helpers.CStrokeJsonHelper;
 import me.scai.plato.helpers.CWrittenTokenSetJsonHelper;
 
 import me.scai.plato.helpers.HandwritingEnginePool;
+import me.scai.plato.helpers.PlatoVarMapHelper;
 import me.scai.plato.publishers.PlatoRequestPublisher;
 import me.scai.plato.publishers.PlatoRequestPublisherS3;
 import me.scai.plato.security.BypassSecurity;
@@ -255,6 +256,17 @@ public class HandwritingServlet extends HttpServlet {
                     errors.add(new JsonPrimitive("Failed to create new instance of handwriting engine"));
                     outObj.add("engineUuid", new JsonNull());
                 }
+
+                // Initial varMap
+                HandwritingEngine hwEng = hwEngPool.getHandwritingEngine(engUuid);
+                try {
+                    outObj.add("varMap", PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
+                            ((HandwritingEngineImpl) hwEng).stringizer));
+                } catch (HandwritingEngineException e) {
+                    errors.add(new JsonPrimitive("Failed to obtain initial variable map after engine creation " +
+                                                 "(engine UUID = " + engUuid));
+                }
+
             } else if (action.equals("remove-engine")) {
                 if (toPublish(reqObj) && s3RequestPublisher != null) {
                     s3RequestPublisher.publishRemoveEngineRequest(reqObj);
@@ -599,6 +611,12 @@ public class HandwritingServlet extends HttpServlet {
                             outObj.add("writtenTokenUuids", writtenTokenUuids);     // UUIDs of the written tokens
                             outObj.add("constituentWrittenTokenUuids", constituentWrittenTokenUuids);
                                                                                     // UUIDs of the constituent written tokens of the abstract tokens
+
+                            // TODO: Use hash to determine if it needs to be updated
+                            // TODO: Better way to get the stringizer
+                            // TODO: This is duplicate with the get-var-map action. Fix it.
+                            outObj.add("varMap", PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
+                                    ((HandwritingEngineImpl) hwEng).stringizer));
 
                             /* Get last stroke-curator user action */
                             HandwritingEngineUserAction lastUserAction =  hwEng.getLastUserAction();

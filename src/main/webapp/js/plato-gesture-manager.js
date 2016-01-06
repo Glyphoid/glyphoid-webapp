@@ -18,6 +18,8 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                 onTouchMove      : null,
                 onTouchUp        : null,
 
+                varMap           : null,
+
                 endpoints        : {
 //                    tokenRecognizer : "http://127.0.0.1/plato/token-recog" //DEBUG
                     tokenRecognizer : "token-recog"
@@ -86,8 +88,11 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
             /* Initialization, get new backend handwriting engine */
             /* Obtain the handwriting engine UUID */
             self.hwEngAgent.getNewEngine(
-                function() {
+                function(createEngineRespObj) {
                     console.log("Creation of handwriting engine succeeded");
+
+                    // Show initial variable map
+                    self.options.varMap.update(createEngineRespObj.varMap);
 
                     /* Get all token names */
                     self.hwEngAgent.getAllTokenNames(
@@ -1619,6 +1624,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     function(responseJSON, elapsedMillis) { /* Success in removing last token */
 //                        console.log("Parsing of token set succeeded: responseJSON =", responseJSON);
 
+                        if (typeof responseJSON["varMap"] === "object") {
+                            self.options.varMap.update(responseJSON["varMap"]);
+                        }
+
                         self.redraw();
 
                         if (responseJSON.errors.length === 0) {
@@ -1661,6 +1670,10 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     tokenIndices,
                     function(responseJSON, elapsedMillis) {  // TODO: De-duplicate the callbacks with parseTokenSet
 //                        console.log("Parsing of token set succeeded: responseJSON =", responseJSON);
+
+                        if (typeof responseJSON["varMap"] === "object") {
+                            self.options.varMap.update(responseJSON["varMap"]);
+                        }
 
                         self.redraw();
 

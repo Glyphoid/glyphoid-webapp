@@ -3,7 +3,7 @@ package me.scai.plato.servlets;
 import com.google.gson.*;
 import me.scai.handwriting.HandwritingEngineUserAction;
 import me.scai.parsetree.MathHelper;
-import me.scai.plato.servlets.HandwritingServletTestHelper;
+import me.scai.parsetree.evaluation.ValueUnion;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.Before;
@@ -30,7 +30,8 @@ public class TestHandwritingServlet_general {
 
     private static final int uuidStringLen = 36;
 
-    private static final float delta = 1e-9f;
+    private static final float FLOAT_TOL = 1e-9f;
+    private static final double DOUBLE_TOL = 1e-9;
 
     private static final double epsilon = 1e-6;
     private static final float floatTol = 1e-6f;
@@ -980,14 +981,27 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "=");
         assertEquals(tokens.get(2).getAsJsonObject().get("recogWinner").getAsString(), "1");
 
+        // Before the parsing, the var map should not contain variable "V"
+        assertFalse(respObjAdd3.get("varMap").getAsJsonObject().has("V"));
+
         // Issue parse-token-set request
         JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
 
+        // Verify that V has been added to the varMap
+        assertTrue(respObjParseTokenSet.get("varMap").getAsJsonObject().has("V"));
+
+        JsonObject varMap = respObjParseTokenSet.getAsJsonObject("varMap");
+        assertEquals(ValueUnion.ValueType.Double.toString(),
+                varMap.getAsJsonObject("V").getAsJsonObject().get("type").getAsString());
+        assertEquals(1.0, varMap.getAsJsonObject("V").getAsJsonObject().get("value").getAsDouble(), 1E-9);
+
         JsonObject respObjGetVarMap = getVarMap(engineUuid);
 
-        JsonObject varMap = respObjGetVarMap.getAsJsonObject("varMap");
+        varMap = respObjGetVarMap.getAsJsonObject("varMap");
+
         assertTrue(varMap.has("V"));
-        assertEquals(1.0, varMap.getAsJsonObject("V").get("value").getAsDouble(), 1E-9);
+
+
     }
 
     @Test
@@ -1131,11 +1145,11 @@ public class TestHandwritingServlet_general {
 
             assertEquals(injBounds.size(), resBounds.size());
             for (int j = 0; j < injBounds.size(); ++j) {
-                assertEquals(injBounds.get(j).getAsFloat(), resBounds.get(j).getAsFloat(), delta);
+                assertEquals(injBounds.get(j).getAsFloat(), resBounds.get(j).getAsFloat(), FLOAT_TOL);
             }
 
-            assertEquals(injToken.get("width").getAsFloat(), resToken.get("width").getAsFloat(), delta);
-            assertEquals(injToken.get("height").getAsFloat(), resToken.get("height").getAsFloat(), delta);
+            assertEquals(injToken.get("width").getAsFloat(), resToken.get("width").getAsFloat(), FLOAT_TOL);
+            assertEquals(injToken.get("height").getAsFloat(), resToken.get("height").getAsFloat(), FLOAT_TOL);
             assertEquals(injToken.get("recogWinner").getAsJsonPrimitive(), resToken.get("recogWinner").getAsJsonPrimitive());
         }
 
@@ -1174,10 +1188,10 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
         JsonArray tokenBounds = tokens.get(0).getAsJsonObject().get("bounds").getAsJsonArray();
         assertEquals(4, tokenBounds.size());
-        assertEquals(0.0f, tokenBounds.get(0).getAsFloat(), delta);
-        assertEquals(0.0f, tokenBounds.get(1).getAsFloat(), delta);
-        assertEquals(40.0f, tokenBounds.get(2).getAsFloat(), delta);
-        assertEquals(20.0f, tokenBounds.get(3).getAsFloat(), delta);
+        assertEquals(0.0f, tokenBounds.get(0).getAsFloat(), FLOAT_TOL);
+        assertEquals(0.0f, tokenBounds.get(1).getAsFloat(), FLOAT_TOL);
+        assertEquals(40.0f, tokenBounds.get(2).getAsFloat(), FLOAT_TOL);
+        assertEquals(20.0f, tokenBounds.get(3).getAsFloat(), FLOAT_TOL);
 
         String state0 = gson.toJson(respObjAdd0.get("writtenTokenSet").getAsJsonObject());
 
@@ -1213,10 +1227,10 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
         tokenBounds = tokens.get(0).getAsJsonObject().get("bounds").getAsJsonArray();
         assertEquals(4, tokenBounds.size());
-        assertEquals(10.0f, tokenBounds.get(0).getAsFloat(), delta);
-        assertEquals(10.0f, tokenBounds.get(1).getAsFloat(), delta);
-        assertEquals(50.0f, tokenBounds.get(2).getAsFloat(), delta);
-        assertEquals(30.0f, tokenBounds.get(3).getAsFloat(), delta);
+        assertEquals(10.0f, tokenBounds.get(0).getAsFloat(), FLOAT_TOL);
+        assertEquals(10.0f, tokenBounds.get(1).getAsFloat(), FLOAT_TOL);
+        assertEquals(50.0f, tokenBounds.get(2).getAsFloat(), FLOAT_TOL);
+        assertEquals(30.0f, tokenBounds.get(3).getAsFloat(), FLOAT_TOL);
 
         /* Undo the token move */
         respUndo = undoStrokeCuratorUserAction(engineUuid);
@@ -1230,10 +1244,10 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
         tokenBounds = tokens.get(0).getAsJsonObject().get("bounds").getAsJsonArray();
         assertEquals(4, tokenBounds.size());
-        assertEquals(0.0f, tokenBounds.get(0).getAsFloat(), delta);
-        assertEquals(0.0f, tokenBounds.get(1).getAsFloat(), delta);
-        assertEquals(40.0f, tokenBounds.get(2).getAsFloat(), delta);
-        assertEquals(20.0f, tokenBounds.get(3).getAsFloat(), delta);
+        assertEquals(0.0f, tokenBounds.get(0).getAsFloat(), FLOAT_TOL);
+        assertEquals(0.0f, tokenBounds.get(1).getAsFloat(), FLOAT_TOL);
+        assertEquals(40.0f, tokenBounds.get(2).getAsFloat(), FLOAT_TOL);
+        assertEquals(20.0f, tokenBounds.get(3).getAsFloat(), FLOAT_TOL);
 
         /* Redo the token move */
         respRedo = redoStrokeCuratorUserAction(engineUuid);
@@ -1247,10 +1261,10 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "V");
         tokenBounds = tokens.get(0).getAsJsonObject().get("bounds").getAsJsonArray();
         assertEquals(4, tokenBounds.size());
-        assertEquals(10.0f, tokenBounds.get(0).getAsFloat(), delta);
-        assertEquals(10.0f, tokenBounds.get(1).getAsFloat(), delta);
-        assertEquals(50.0f, tokenBounds.get(2).getAsFloat(), delta);
-        assertEquals(30.0f, tokenBounds.get(3).getAsFloat(), delta);
+        assertEquals(10.0f, tokenBounds.get(0).getAsFloat(), FLOAT_TOL);
+        assertEquals(10.0f, tokenBounds.get(1).getAsFloat(), FLOAT_TOL);
+        assertEquals(50.0f, tokenBounds.get(2).getAsFloat(), FLOAT_TOL);
+        assertEquals(30.0f, tokenBounds.get(3).getAsFloat(), FLOAT_TOL);
 
         /* Undo the token move */
         undoStrokeCuratorUserAction(engineUuid);

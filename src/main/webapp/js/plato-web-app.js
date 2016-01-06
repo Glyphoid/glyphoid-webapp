@@ -11,6 +11,7 @@ require.config({
         "view-port"                : "view-port",
         "plato-gesture-manager"    : "plato-gesture-manager",
         "plato-grammar-manager"    : "plato-grammar-manager",
+        "plato-var-map"            : "plato-var-map",
         "handwriting-engine-agent" : "handwriting-engine-agent",
         "mathjax-client"           : "mathjax-client",
         "token-display-names"      : "token-display-names",
@@ -31,13 +32,14 @@ require.config({
     }
 });
 
-require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", "mathjax-client", "main-dev",
+require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", "plato-var-map",
+         "mathjax-client", "main-dev",
          "bootstrap", "jquery.blockUI"], /* jquery-mobile, jquery-ui, jquery.blockUI are plugins to jquery */
-    function($, sprintf, PlatoGestureManager, PlatoGrammarManager, MathJaxClient, MainDev) {
+    function($, sprintf, PlatoGestureManager, PlatoGrammarManager, PlatoVarMap,
+             MathJaxClient, MainDev) {
         'use strict';
 
         var debugLv = 0;
-
 
         // History of parsing results
         var parseResults = [];
@@ -60,8 +62,16 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
 //        mathJaxClient.tex2mml("\\frac{1}{3}",
 //        );
 
+        // Plato variable map (table) instance
+        var varMap = new PlatoVarMap({
+            tableId        : "varMapTable",
+            headerId       : "varMapTableHeader"
+        });
+
+        // Gesture manager instance
         var gestureManager = new PlatoGestureManager({
             elementId       : "gestureCanvas",
+            varMap          : varMap,
             markStrokeOnset : false,
             onTouchDown  : function(coord) {
                 if (debugLv > 0) {
@@ -217,7 +227,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
 
         var parserEvaluatorOutputTemplate = _.template(
             "<tr class='platoTableMostRecentRow'>" +
-                "<td><%= index %></td>" +  // TODO: Number ID
+                "<td><%= index %></td>" +
                 "<td><%= stringizerOutput %></td>" +
                 "<td><%= mathTex %></td>" +
                 "<td id='mathML_id'><img src='res/images/ajax-loader.gif'/></td>" +
@@ -228,7 +238,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
 
         var parserEvaluatorOutputPendingTemplate = _.template(
             "<tr id='parserEvaluatorOutputPendingRow' class='platoTableMostRecentRow'>" +
-                "<td></td>" +  // TODO: Number ID
+                "<td></td>" +
                 "<td><img src='res/images/ajax-loader.gif'/></td>" +
                 "<td><img src='res/images/ajax-loader.gif'/></td>" +
                 "<td><img src='res/images/ajax-loader.gif'/></td>" +

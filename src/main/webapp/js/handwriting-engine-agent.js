@@ -107,7 +107,7 @@ define(["jquery", "jquery.blockUI"], function($) {
                         }
 
                         if (typeof successCallback === "function") {
-                            successCallback();
+                            successCallback(resp.responseJSON);
 
                         }
                     } else {

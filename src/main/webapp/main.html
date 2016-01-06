@@ -49,22 +49,30 @@
             <span><img src="res/images/glyphoid_32x32.ico" alt="Glyphoid: Mathematical Handwriting Parser and Evaluator"/></span>
             <span style="text-align:center; font-weight: bold" id="glyphoidTitle">Glyphoid</span>
             <span style="padding-left: 32px"></span>
-            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
-                <a href="javascript:void(0)" id="helpButton">About + Help</a>
-            </button>
+            <a href="javascript:void(0)" id="helpButton">
+                <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                    About + Help
+                </button>
+            </a>
             <!-- TODO: Reinstate -->
             <!--<button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">-->
                 <!--<a href="javascript:void(0)" id="mobileDownloadsButton">Mobile Downloads</a>-->
             <!--</button>-->
-            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
-                <a href="https://github.com/Glyphoid/" target="_blank">Source Code</a>
-            </button>
-            <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
-                <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc" target="_blank">Demo Videos</a>
-            </button>
-            <button type="button" class="btn btn-link btn-small" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
-                <a href="https://www.surveymonkey.com/r/2WBL8XX" target="_blank">Provide Feedback</a>
-            </button>
+            <a href="https://github.com/Glyphoid/" target="_blank">
+                <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                    Source Code
+                </button>
+            </a>
+            <a href="https://www.youtube.com/watch?v=9LFmDcpyZ0w&list=PLcUSYoM0otQi4qCaO5uzluG8ww69kgepc" target="_blank">
+                <button type="button" class="btn btn-link btn-small" style="background-color: #E0E0FF;border:1px solid;border-radius:6px;">
+                    Demo Videos
+                </button>
+            </a>
+            <a href="https://www.surveymonkey.com/r/2WBL8XX" target="_blank">
+                <button type="button" class="btn btn-link btn-small" style="background-color: #E0FFA0;border:1px solid;border-radius:6px;">
+                    Provide Feedback
+                </button>
+            </a>
 
         </td>
 
@@ -72,7 +80,6 @@
     <tr>
         <td>
             <canvas id="gestureCanvas" width="680" height="420" style="border:1px solid #000000"></canvas>
-
         </td>
 
         <td style="vertical-align: top">
@@ -123,11 +130,24 @@
 
         </td>
 
+        <td style="vertical-align: top" style="width:480px">
+            <ul class="nav nav-tabs"  style="width:100%">
+                <li class="active"><a data-toggle="pill" href="#varMapTab">Variables</a></li>
+            </ul>
+
+            <div id="varMapTab" class="tab-pane fade in active" style="width:100%">
+                <table class="platoTable" id="varMapTable" style="width:100%">
+                    <tr id="varMapTableHeader">
+                        <th id="varName" style="width:15%;">Name</th>
+                        <th id="varType" style="width:25%;">Type</th>
+                        <th id="varValue" style="width:60%;">Value</th>
+                    </tr>
+                </table>
+            </div>
+        </td>
+
     </tr>
 </table>
-
-
-<!--<div class="dropdown">-->
 
 <button class="btn btn-default CommandButton" id="parseTokenSet" class="funcButton">Parse</button>
 
@@ -143,8 +163,6 @@
 <button class="btn btn-default CommandButton" id="removeLastToken" class="funcButton">Delete</button>
 <button class="btn btn-default CommandButton" id="clearPaths" class="funcButton">Clear</button>
 
-<!-- style="margin-right:0px; border-bottom-right-radius:0px; border-top-right-radius:0px; border-right:none;" -->
-<!-- style="margin-left:0px; border-bottom-left-radius:0px; border-top-left-radius:0px; border-left:none;" -->
 <button class="btn btn-default CommandButton" id="mergeLast2Strokes" class="funcButton">Merge</button>
 
 <span class="btn-group">
@@ -163,7 +181,6 @@
 <button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
 <button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
 
-<!--</div>-->
 
 
 <table>
