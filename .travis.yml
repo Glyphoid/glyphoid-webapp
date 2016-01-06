@@ -1,0 +1,14 @@
+language: java
+
+install:
+  - mkdir /home/travis/java-worker-pool
+  - git clone https://github.com/Glyphoid/java-worker-pool.git /home/travis/java-worker-pool
+  - mvn -f /home/travis/java-worker-pool/pom.xml clean install
+  - mkdir /home/travis/tokensets
+  - git clone https://github.com/Glyphoid/tokensets /home/travis/tokensets
+  - mkdir /home/travis/math-handwriting-lib
+  - git clone https://github.com/Glyphoid/math-handwriting-lib /home/travis/math-handwriting-lib
+  - mvn -f /home/travis/math-handwriting-lib/pom.xml clean install -DtokenSetPathPrefix=/home/travis/tokensets/TS_
+
+script:
+  - mvn test -B
