@@ -898,7 +898,7 @@ public class TestHandwritingServlet_general {
             assertEquals(respObjAdd.get("errors").getAsJsonArray().size(), 0);
         }
 
-        JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, 100L);
+        JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, 20L);
 
         assertTrue(respObjParseTokenSet.get("errors").isJsonArray());
         JsonArray errors = respObjParseTokenSet.get("errors").getAsJsonArray();
