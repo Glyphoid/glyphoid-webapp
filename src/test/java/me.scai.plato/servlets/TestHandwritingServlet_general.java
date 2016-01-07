@@ -884,7 +884,7 @@ public class TestHandwritingServlet_general {
     public void testParsingTimeoutShortTimeout() {
 
         /* Add a lot of strokes "1"s, so that the parsing will for sure taking longer than 1000 ms */
-        for (int i = 0; i < 15; ++i) {
+        for (int i = 0; i < 50; ++i) {
             float xOffset = i * 1.0f;
 
             float[] x =  {20f, 20.1f, 20.2f, 20.3f, 20.4f};
@@ -898,7 +898,7 @@ public class TestHandwritingServlet_general {
             assertEquals(respObjAdd.get("errors").getAsJsonArray().size(), 0);
         }
 
-        JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, 500L);
+        JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, 100L);
 
         assertTrue(respObjParseTokenSet.get("errors").isJsonArray());
         JsonArray errors = respObjParseTokenSet.get("errors").getAsJsonArray();
@@ -981,13 +981,14 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.get(1).getAsJsonObject().get("recogWinner").getAsString(), "=");
         assertEquals(tokens.get(2).getAsJsonObject().get("recogWinner").getAsString(), "1");
 
-        // Before the parsing, the var map should not contain variable "V"
-        assertFalse(respObjAdd3.get("varMap").getAsJsonObject().has("V"));
+        // There should be no "varMap" before the parsing, because the new variable has not been parsed out yet.
+        assertFalse(respObjAdd3.has("varMap"));
 
         // Issue parse-token-set request
         JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
 
         // Verify that V has been added to the varMap
+        assertTrue(respObjParseTokenSet.has("varMap"));
         assertTrue(respObjParseTokenSet.get("varMap").getAsJsonObject().has("V"));
 
         JsonObject varMap = respObjParseTokenSet.getAsJsonObject("varMap");
@@ -1001,6 +1002,12 @@ public class TestHandwritingServlet_general {
 
         assertTrue(varMap.has("V"));
 
+        // Parse again and test if there is no varMap in the new response object.
+        respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+
+        // The 2nd parsing should have led to the same value of "V". As such, there should be no "varMap" in the new
+        // response object.
+        assertFalse(respObjParseTokenSet.has("varMap"));
 
     }
 

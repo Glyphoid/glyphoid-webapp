@@ -260,7 +260,7 @@ public class HandwritingServlet extends HttpServlet {
                 // Initial varMap
                 HandwritingEngine hwEng = hwEngPool.getHandwritingEngine(engUuid);
                 try {
-                    outObj.add("varMap", PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
+                    outObj.add(PlatoVarMapHelper.VAR_MAP_KEY, PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
                             ((HandwritingEngineImpl) hwEng).stringizer));
                 } catch (HandwritingEngineException e) {
                     errors.add(new JsonPrimitive("Failed to obtain initial variable map after engine creation " +
@@ -311,7 +311,7 @@ public class HandwritingServlet extends HttpServlet {
                     varMapObj.add(varName, vuObj);
                 }
 
-                outObj.add("varMap", varMapObj);
+                outObj.add(PlatoVarMapHelper.VAR_MAP_KEY, varMapObj);
 
             } else if (isConfigAction) {
                 HandwritingEngine hwEng = getHandwritingEngineFromRequest(reqObj, errors);
@@ -340,6 +340,13 @@ public class HandwritingServlet extends HttpServlet {
                 if (hwEng != null) {
                     try {
                         synchronized (hwEng) {
+
+                            /* First, obtain a snapshot of the var map, which will be compared with the var map
+                             * after the operation. The result of the comparison will be used to determine if
+                             * varMap will appear in the response JSON object. */
+                            JsonObject varMapObj0 = PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
+                                    ((HandwritingEngineImpl) hwEng).stringizer);
+
 
                             if (action.equals("add-stroke")) { /* Add stroke */
                                 String strokeJson = gson.toJson(reqObj.get("stroke"));
@@ -612,11 +619,18 @@ public class HandwritingServlet extends HttpServlet {
                             outObj.add("constituentWrittenTokenUuids", constituentWrittenTokenUuids);
                                                                                     // UUIDs of the constituent written tokens of the abstract tokens
 
-                            // TODO: Use hash to determine if it needs to be updated
                             // TODO: Better way to get the stringizer
-                            // TODO: This is duplicate with the get-var-map action. Fix it.
-                            outObj.add("varMap", PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
-                                    ((HandwritingEngineImpl) hwEng).stringizer));
+                            if ( !outObj.has(PlatoVarMapHelper.VAR_MAP_KEY) ) {
+                                JsonObject varMapObj1 = PlatoVarMapHelper.getVarMapAsJson(hwEng.getVarMap(),
+                                        ((HandwritingEngineImpl) hwEng).stringizer);
+
+                                // Compare the new var map JSON object with the original one obtained before the data
+                                // operation. If difference(s) are found, include the new one in the response object.
+                                varMapObj1 = PlatoVarMapHelper.compare(varMapObj1, varMapObj0);
+                                if (varMapObj1 != null) {
+                                    outObj.add(PlatoVarMapHelper.VAR_MAP_KEY, varMapObj1);
+                                }
+                            }
 
                             /* Get last stroke-curator user action */
                             HandwritingEngineUserAction lastUserAction =  hwEng.getLastUserAction();

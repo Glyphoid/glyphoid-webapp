@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class HandwritingServletTestHelper {
@@ -63,7 +64,14 @@ public class HandwritingServletTestHelper {
         catch (UnsupportedEncodingException exc) {
         }
 
+        // The create-engine response should include initial var map.
+        assertTrue(respObjEngineCreation.has("varMap"));
+        assertTrue(respObjEngineCreation.get("varMap").isJsonObject());
+
         return respObjEngineCreation.get("engineUuid").getAsString();
+
+
+
     }
 
     /* Add a stroke. Returns: the response JSON object */

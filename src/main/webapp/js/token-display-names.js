@@ -42,7 +42,9 @@ define([], function() {
         "gr_ph"      : "φ",
         "gr_ch"      : "χ (chi)",
         "gr_ps"      : "ψ",
-        "gr_omega"   : "ω"
+        "gr_omega"   : "ω",
+
+        "hbar"       : "ℏ"
     };
 
     return displayNameMap;

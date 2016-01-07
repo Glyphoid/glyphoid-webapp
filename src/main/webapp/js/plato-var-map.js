@@ -1,11 +1,11 @@
-define(["underscore", "jquery"], function(_, $) {
+define(["underscore", "jquery", "token-display-names"], function(_, $, displayNameMap) {
     'use strict';
 
     var PlatoVarMap = function(options) {
         this.options = {};
 
         this.varMapRowTemplate = _.template(
-            "<tr id='' class=''>" +
+            "<tr id='' class='<%= rowClass %>'>" +
                 "<td><%= varName %></td>" +
                 "<td><%= varType %></td>" +
                 "<td><%= varValue %></td>" +
@@ -28,10 +28,25 @@ define(["underscore", "jquery"], function(_, $) {
                 var varType  = varMap[varName]["type"];
                 var varValue = varMap[varName]["value"];
 
+                var isNew    = varMap[varName]["isNew"];
+                var rowClass = "platoVarMapTableRowOld";
+                if (typeof isNew === "boolean" && isNew) {
+                    rowClass = "platoVarMapTableRowNew";
+                }
+
+
+                var varDisplayName;
+                if (typeof displayNameMap[varName] === "string") {
+                    varDisplayName = displayNameMap[varName];
+                } else {
+                    varDisplayName = varName;
+                }
+
                 var newRow = self.varMapRowTemplate({
-                    "varName"  : varName,
+                    "varName"  : varDisplayName,
                     "varType"  : varType,
-                    "varValue" : varValue
+                    "varValue" : varValue,
+                    "rowClass" : rowClass
                 });
 
                 newRows += newRow;
