@@ -9,15 +9,12 @@ import me.scai.plato.serverutils.PropertiesHelper;
 import me.scai.utilities.WorkerClientInfo;
 import me.scai.utilities.clienttypes.ClientTypeMajor;
 import me.scai.utilities.clienttypes.ClientTypeMinor;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Properties;
 import java.util.UUID;
 
 import static org.junit.Assert.*;

@@ -16,7 +16,6 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Date;
 import java.util.logging.Logger;
 

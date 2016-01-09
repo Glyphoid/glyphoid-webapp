@@ -73,8 +73,7 @@ public class TestHandwritingServlet_subsetParsing {
                 "{\"numPoints\":5,\"x\":[0, 10, 20, 30, 40],\"y\":[25, 25, 25, 25, 25]}");
 
         /* Add 3rd stroke: 7 */
-        JsonObject respObjAdd2 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd2 = addSeven(engineUuid);
 
         /* Add 4th stroke: 2 */
         JsonObject respObjAdd3 = helper.addStroke(engineUuid,
@@ -107,8 +106,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedByAddStroke() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -180,8 +178,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedByRemoveToken() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -289,8 +286,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedByRemoveTokenThenAddStrokes() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -384,8 +380,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedByForceSetWrittenTokenName() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -469,8 +464,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedByForceStrokeMerging() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -510,24 +504,24 @@ public class TestHandwritingServlet_subsetParsing {
         verifyWrittenTokenSet(respObjAdd4, new String[] {"7", "2", "-", "-", "1"});
         verifyAbstractTokenSet(respObjAdd4, new boolean[] {true, false, false, false}, new String[] {"72", "-", "-", "1"});
 
-        /* Add the 6th stroke: - (2nd stroke of pi) */
+        /* Add the 6th stroke: - (3rd stroke of pi) */
         JsonObject respObjAdd5 = helper.addStroke(engineUuid,
                 "{\"numPoints\":6,\"x\":[14, 14.1, 14.2, 14.3, 14.4, 14.5],\"y\":[5, 7, 9, 11, 13, 15]}");
 
         verifyWrittenTokenSet(respObjAdd5, new String[] {"7", "2", "-", "-", "1", "1"});
         verifyAbstractTokenSet(respObjAdd5, new boolean[] {true, false, false, false, false}, new String[] {"72", "-", "-", "1", "1"});
 
-        /* Merge the last three strokes to get gr_Pi */
+        /* Merge the last three strokes to get gr_pi */
         // The stroke indices are for strokes in stroke curator, not for the abstract token set
         JsonObject mergeRespObj = helper.mergeStrokesAsToken(engineUuid, new int[] {3, 4, 5});
 
-        verifyWrittenTokenSet(mergeRespObj, new String[] {"7", "2", "-", "gr_Pi"});
-        verifyAbstractTokenSet(mergeRespObj, new boolean[] {true, false, false}, new String[] {"72", "-", "gr_Pi"});
+        verifyWrittenTokenSet(mergeRespObj, new String[] {"7", "2", "-", "gr_pi"});
+        verifyAbstractTokenSet(mergeRespObj, new boolean[] {true, false, false}, new String[] {"72", "-", "gr_pi"});
 
         /* 2nd parsing */
         JsonObject respObj1 = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
 
-        verifyParserResult(respObj1, "(gr_Pi / 72)");
+        verifyParserResult(respObj1, "(gr_pi / 72)");
 
     }
 
@@ -536,8 +530,7 @@ public class TestHandwritingServlet_subsetParsing {
     public void testTokenSubsetParsingFollowedMoveTokens() {
 
         /* Add 1st stroke: 7 */
-        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
-                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        JsonObject respObjAdd0 = addSeven(engineUuid);
 
         /* Add 2nd stroke: 2 */
         JsonObject respObjAdd1 = helper.addStroke(engineUuid,
@@ -618,6 +611,14 @@ public class TestHandwritingServlet_subsetParsing {
         verifyParserResult(respObj2, "(71 / 72)");
 
     }
+
+    private JsonObject addSeven(String engineUuid) {
+        //        JsonObject respObjAdd0 = helper.addStroke(engineUuid,
+//                "{\"numPoints\":5,\"x\":[5, 7, 9, 8, 7],\"y\":[30, 30, 30, 40, 50]}");
+        return helper.addStroke(engineUuid,
+                "{\"numPoints\":17,\"x\":[5.000, 5.973, 7.189, 8.527, 10.959, 12.784, 14.000, 13.635, 12.297, 10.959, 10.230, 9.500, 9.014, 8.770, 8.649, 8.405, 8.284],\"y\":[30.899, 30.449, 30.225, 30.000, 30.000, 30.000, 30.449, 32.247, 35.169, 38.090, 39.888, 41.910, 43.933, 45.730, 47.753, 48.876, 50.000]}");
+    }
+
 
     // TODO: Test Clearing after subset parsing
     // TODO: Test Multi-token Deletion after subset parsing

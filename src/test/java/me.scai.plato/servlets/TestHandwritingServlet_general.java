@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 public class TestHandwritingServlet_general {
 
-
     private static final Gson gson = new Gson();
     private static final JsonParser jsonParser = new JsonParser();
 
@@ -1043,7 +1042,7 @@ public class TestHandwritingServlet_general {
 
         /* Add 4th strokes: c */
         JsonObject respObjAdd3 = helper.addStroke(engineUuid,
-                "{\"numPoints\":7,\"x\":[81.2, 80, 75, 73, 75, 80, 81],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
+                "{\"numPoints\":7,\"x\":[84.3, 81.9, 71.9, 71.9, 71.9, 81.9, 83.9],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
 
         assertEquals(respObjAdd3.get("errors").getAsJsonArray().size(), 0);
 
@@ -1179,7 +1178,6 @@ public class TestHandwritingServlet_general {
         }
 
     }
-
 
     @Test
     public void testUndoRedo() {
@@ -1380,7 +1378,7 @@ public class TestHandwritingServlet_general {
                      getLastStrokeCuratorUserAction(engineUuid).get("lastStrokeCuratorUserAction").getAsString());
 
         /* Add the 4th stroke: c */
-        JsonObject respAdd3 = helper.addStroke(engineUuid, "{\"numPoints\":7,\"x\":[81.2, 80, 75, 75, 75, 80, 81],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
+        JsonObject respAdd3 = helper.addStroke(engineUuid, "{\"numPoints\":7,\"x\":[84.3, 81.9, 71.9, 71.9, 71.9, 81.9, 83.9],\"y\":[2, 0, 0, 10, 20, 20, 18]}");
 
         tokens1 = respAdd3.get("writtenTokenSet").getAsJsonObject().get("tokens").getAsJsonArray();
         assertEquals(3, tokens1.size());
