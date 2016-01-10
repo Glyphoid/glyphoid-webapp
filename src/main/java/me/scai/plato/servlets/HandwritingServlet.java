@@ -612,6 +612,10 @@ public class HandwritingServlet extends HttpServlet {
                             JsonArray constituentWrittenTokenUuids = gson.toJsonTree(hwEng.getConstituentWrittenTokenUUIDs()).getAsJsonArray();
                             JsonArray writtenTokenUuids = gson.toJsonTree(hwEng.getWrittenTokenUUIDs()).getAsJsonArray();
 
+                            // Remove the unused "recogPs" fields in writtenTokenSetJsonObj and tokenSetJsonObj
+                            removeRecogPs(writtenTokenSetJsonObj);
+                            removeRecogPs(tokenSetJsonObj);
+
                             outObj.add("writtenTokenSet", writtenTokenSetJsonObj);  // Written token set
                             outObj.add("tokenSet", tokenSetJsonObj);                // Abstract token set
 
@@ -764,6 +768,15 @@ public class HandwritingServlet extends HttpServlet {
         }
 
         return hwEng;
+    }
+
+    private void removeRecogPs(JsonObject tokenSetJsonObj) {
+        JsonArray tokensArray = tokenSetJsonObj.get("tokens").getAsJsonArray();
+        for (int k = 0; k < tokensArray.size(); ++k) {
+            if (tokensArray.get(k).getAsJsonObject().has("recogPs")) {
+                tokensArray.get(k).getAsJsonObject().remove("recogPs");
+            }
+        }
     }
 }
 

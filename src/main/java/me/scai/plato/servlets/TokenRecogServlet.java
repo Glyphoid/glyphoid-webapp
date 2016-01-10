@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServlet;
@@ -18,16 +19,49 @@ import me.scai.handwriting.TokenRecogEngine;
 import me.scai.handwriting.TokenRecogEngineSDV;
 import me.scai.plato.security.BypassSecurity;
 import me.scai.plato.serverutils.PropertiesHelper;
+import org.apache.commons.io.IOUtils;
+
+class TokenPValPair implements Comparable<TokenPValPair> {
+    /* Member variables */
+    private String tokenName;
+    private double p;
+
+    /* Constructor */
+    public TokenPValPair(String tokenName, double p) {
+        this.tokenName = tokenName;
+        this.p = p;
+    }
+
+    /* Getters */
+    public String getTokenName() {
+        return tokenName;
+    }
+
+    public double getP() {
+        return p;
+    }
+
+    @Override
+    public int compareTo(TokenPValPair that) {
+        return Double.compare(this.p, that.p);
+    }
+
+}
+
 
 public class TokenRecogServlet extends HttpServlet {
-    private static final Logger logger = Logger.getLogger(TokenRecogServlet.class.getName());
-    private static final Gson gson = new Gson();
+    /* Constants */
+    private static final int NUM_CANDIDATES = 10;
 
+    private static final Logger logger = Logger.getLogger(TokenRecogServlet.class.getName());
+
+    private static final Gson gson = new Gson();
+    private static final JsonParser jsonParser = new JsonParser();
+
+    /* Member variables */
     private TokenRecogEngine tokEngine;
     private ArrayList<String> tokNames;
 
-    private JsonArray tokNamesArray;
-    private static final JsonParser jsonParser = new JsonParser();
 
     @Override
     public void init() throws ServletException {
@@ -64,7 +98,7 @@ public class TokenRecogServlet extends HttpServlet {
         }
 
         tokNames = tokEngine.tokenNames; /* TODO: Thread safety */
-        tokNamesArray = getTokenNamesJsonArray();
+//        tokNamesArray = getTokenNamesJsonArray();
 
         logger.info("De-serialization of the token engine is complete.");
     }
@@ -127,7 +161,7 @@ public class TokenRecogServlet extends HttpServlet {
         }
         String reqData = buffer.toString();
 
-        logger.info("reqData = \"" + reqData + "\""); //DEBUG
+//        logger.info("reqData = \"" + reqData + "\""); //DEBUG
 
         /* XHR for debugging */ // TODO: Remove
         response.addHeader("Access-Control-Allow-Origin", "null");
@@ -164,20 +198,49 @@ public class TokenRecogServlet extends HttpServlet {
 
         /* Perform recognition */
         /* TODO: Check to see if the token engine is null */
-        double [] recogPVals = new double[tokNames.size()];
+        double[] recogPVals = new double[tokNames.size()];
         int recogWinnerIdx = tokEngine.recognize(wt, recogPVals);
         String recogWinnerTokenName = tokNames.get(recogWinnerIdx);
 
+        /* Sort all tokens by descending order of p-value */
+        TokenPValPair[] pairs = new TokenPValPair[recogPVals.length];
 
+        for (int i = 0; i < pairs.length; ++i) {
+            pairs[i] = new TokenPValPair(tokNames.get(i), recogPVals[i]);
+        }
+
+        Arrays.sort(pairs);
+
+        JsonArray recogPValsJson = new JsonArray();
+        int candidateCount = 0;
+        for (int i = pairs.length - 1;
+             i >= 0 && candidateCount++ < NUM_CANDIDATES;
+             --i) {
+            JsonArray el = new JsonArray();
+
+            el.add(new JsonPrimitive(pairs[i].getTokenName()));
+            el.add(new JsonPrimitive(pairs[i].getP()));
+
+            recogPValsJson.add(el);
+        }
 
 //        PrintWriter out = response.getWriter();
 //        JsonObject outObj = new JsonObject();
 
-        outObj.add("agent", new JsonPrimitive("TokenRecogServlet"));
-        outObj.add("requestData", new JsonPrimitive(reqData));
-        outObj.add("winnerTokenName", new JsonPrimitive(recogWinnerTokenName));
-        outObj.add("recogPVals", getRecogPValuesArray(recogPVals));
 
-        out.println(gson.toJson(outObj));
+        outObj.add("agent", new JsonPrimitive("TokenRecogServlet"));
+//        outObj.add("requestData", new JsonPrimitive(reqData));
+        outObj.add("winnerTokenName", new JsonPrimitive(recogWinnerTokenName));
+//        outObj.add("recogPVals", getRecogPValuesArray(recogPVals));
+        outObj.add("recogPVals", recogPValsJson);
+
+        try {
+            out.println(gson.toJson(outObj));
+        } catch (Exception e) {
+
+        } finally {
+            IOUtils.closeQuietly(out);
+        }
+
     }
 }

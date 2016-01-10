@@ -679,6 +679,8 @@ public class TestHandwritingServlet_subsetParsing {
         assertEquals(nt, tokens.size());
 
         for (int i = 0; i < nt; ++i) {
+            assertFalse(tokens.get(i).getAsJsonObject().has("recogPs")); // recogPs should have been omitted
+
             if (isNodeToken[i]) {
                 assertTrue(tokens.get(i).getAsJsonObject().get("node").isJsonObject());
                 assertEquals(trueTokenNames[i], tokens.get(i).getAsJsonObject().get("parsingResult").getAsString());

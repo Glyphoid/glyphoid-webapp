@@ -206,6 +206,8 @@ public class TestHandwritingServlet_general {
         assertEquals(tokens.size(), 1);
         assertEquals(tokens.get(0).getAsJsonObject().get("recogWinner").getAsString(), "1");
 
+        assertFalse(tokens.get(0).getAsJsonObject().has("recogPs")); // recogPs should have been omitted
+
         JsonArray constituentStrokes = respObj.get("constituentStrokes").getAsJsonArray();
         assertEquals(constituentStrokes.size(), 1);
 
