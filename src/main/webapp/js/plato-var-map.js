@@ -34,13 +34,7 @@ define(["underscore", "jquery", "token-display-names"], function(_, $, displayNa
                     rowClass = "platoVarMapTableRowNew";
                 }
 
-
-                var varDisplayName;
-                if (typeof displayNameMap[varName] === "string") {
-                    varDisplayName = displayNameMap[varName];
-                } else {
-                    varDisplayName = varName;
-                }
+                var varDisplayName = self.getVarDisplayName(varName);
 
                 var newRow = self.varMapRowTemplate({
                     "varName"  : varDisplayName,
@@ -55,6 +49,30 @@ define(["underscore", "jquery", "token-display-names"], function(_, $, displayNa
             $("#" + self.options.headerId).after(newRows);
 
 
+        };
+
+        /**
+         * Get the display name of a variable, taking into account the display name map and subscripts
+         * @param varName   Original (internal) var name
+         * @return          Display name of the variable
+         */
+        this.getVarDisplayName = function(varName) {
+            var displayName;
+
+            for (var key in displayNameMap) {
+                if (varName.indexOf(key) != -1) {
+                    varName = varName.replace(key, displayNameMap[key]);
+                }
+            }
+
+            if (varName.indexOf("_") != -1) {
+                displayName = varName.substring(0, varName.indexOf("_")) + "<sub>" +
+                              varName.substring(varName.indexOf("_") + 1, varName.length) + "</sub>";
+            } else {
+                displayName =  varName;
+            }
+
+            return displayName;
         };
     };
 

@@ -16,7 +16,7 @@ define([], function() {
         "gr_Ga"      : "Γ",
         "gr_De"      : "Δ",
         "gr_La"      : "Λ",
-        "gr_Pi"      : "π",
+        "gr_Pi"      : "Π",
         "gr_Si"      : "Σ",
         "gr_Th"      : "Θ",
         "gr_Ph"      : "Φ",

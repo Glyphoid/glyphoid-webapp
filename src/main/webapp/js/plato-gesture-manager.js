@@ -92,7 +92,9 @@ define(["underscore", "jquery", "sprintf", "handwriting-engine-agent", "view-por
                     console.log("Creation of handwriting engine succeeded");
 
                     // Show initial variable map
-                    self.options.varMap.update(createEngineRespObj.varMap);
+                    if (typeof self.options === "object" && typeof self.options.varMap === "object") {
+                        self.options.varMap.update(createEngineRespObj.varMap);
+                    }
 
                     /* Get all token names */
                     self.hwEngAgent.getAllTokenNames(

@@ -21,6 +21,7 @@
         "view-port"                : "../view-port",
         "dev-token-helper"         : "../dev-tools/dev-token-helper",
         "plato-gesture-manager"    : "../plato-gesture-manager",
+        "plato-var-map"            : "../plato-var-map",
         "handwriting-engine-agent" : "../handwriting-engine-agent",
         "mathjax-client"           : "../mathjax-client",
         "token-display-names"      : "../token-display-names",
@@ -95,7 +96,7 @@
 
   //// Require the spec and run suite once loaded
   require(["test-view-port", "test-limited-stack", "test-state-stack",
-           "test-pinch-event", "test-plato-gesture-manager"],
+           "test-pinch-event", "test-plato-gesture-manager", "test-plato-var-map"],
       function () {
         htmlReporter.initialize();
         window.jasmine.getEnv().execute();
