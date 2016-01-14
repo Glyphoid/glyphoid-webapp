@@ -79,7 +79,7 @@
     </tr>
     <tr>
         <td>
-            <canvas id="gestureCanvas" width="680" height="420" style="border:1px solid #000000"></canvas>
+            <canvas id="gestureCanvas" width="680" height="360" style="border:1px solid #000000"></canvas>
         </td>
 
         <td style="vertical-align: top">
@@ -173,29 +173,38 @@
         <li role="presentation"><a id="mergeLast2StrokesAlt" role="menuitem" tabindex="-1" href="#">Merge 2 strokes</a></li>
         <li role="presentation"><a id="mergeLast3Strokes" role="menuitem" tabindex="-1" href="#">Merge 3 strokes</a></li>
         <li role="presentation"><a id="mergeLast4Strokes" role="menuitem" tabindex="-1" href="#">Merge 4 strokes</a></li>
+        <li role="presentation"><a id="unmergeLastToken" role="menuitem" tabindex="-1" href="#">Unmerge</a></li>
     </ul>
 </span>
 
-<button class="btn btn-default CommandButton" id="unmergeLastToken" class="funcButton">Unmerge</button>
+<!--<button class="btn btn-default CommandButton" id="unmergeLastToken" class="funcButton">Unmerge</button>-->
 
 <button class="btn btn-default CommandButton" id="undoStrokeCuratorUserAction" class="funcButton">Undo</button>
-<button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>
+<!--<button class="btn btn-default CommandButton" id="redoStrokeCuratorUserAction" class="funcButton">Redo</button>-->
+
+<span id="undoRedoButtonGroup" class="btn-group">
+    <button class="btn btn-default dropdown-toggle" type="button" id="undoRedoDropdown" data-toggle="dropdown">
+        <span class="caret"></span>
+    </button>
+    <ul stye="margin-left:200px;" class="dropdown-menu" role="menu" aria-labelledby="undoRedoDropdown">
+        <li role="presentation"><a id="redoStrokeCuratorUserAction" role="menuitem" tabindex="-1" href="#">Redo</a></li>
+    </ul>
+</span>
 
 
-
-<table>
-    <tr>
-        <td style="padding-top:6px; padding-bottom:6px">
+<!--<table>-->
+    <!--<tr>-->
+        <!--<td style="padding-top:6px; padding-bottom:6px">-->
             <button class="btn btn-default CommandButton" id="setToken" class="funcButton">Set token…</span></button>
-        </td>
-        <td style="padding-top:6px; padding-bottom:6px">
+        <!--</td>-->
+        <!--<td style="padding-top:6px; padding-bottom:6px">-->
             <div id="tokenRecogCands">
 
             </div>
-        </td>
-
-    </tr>
-</table>
+        <!--</td>-->
+<!---->
+    <!--</tr>-->
+<!--</table>-->
 
 <ul class="nav nav-tabs">
     <li class="active"><a data-toggle="pill" href="#parseEvalTab">Parsing + Evaluation</a></li>
@@ -212,7 +221,9 @@
                 <th id="mathMLHeader" style="width:17%;"><a href="https://en.wikipedia.org/wiki/MathML" target="_blank">MathML</a></th>
                 <th id="generatedImageHeader" style="width:17%;">Image</th>
                 <th id="evaluatorOutputHeader" style="width:17%;">Evaluator output</th>
-                <th id="Elapsed time" style="width:10%;">Time elapsed<br/><span class="parseEvalLabelByline">Includes network latency</span></th>
+                <th id="Elapsed time" style="width:10%;">Time elapsed<br/>
+                    <!--<span class="parseEvalLabelByline">Includes network latency</span>-->
+                </th>
             </tr>
 
         </table>

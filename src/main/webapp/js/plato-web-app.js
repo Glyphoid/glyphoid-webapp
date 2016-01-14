@@ -569,6 +569,11 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 top: $("#mergeLast2Strokes").offset().top
             });
 
+            $("#undoRedoDropdown").offset({
+                left: $("#undoStrokeCuratorUserAction").offset().left + $("#undoStrokeCuratorUserAction").width() + 26,
+                top: $("#undoStrokeCuratorUserAction").offset().top
+            });
+
             $(".textDisplay").attr("disabled", true);
             $("#tokenRecogWinner").attr("disabled", true);
 
