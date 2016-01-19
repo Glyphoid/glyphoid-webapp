@@ -288,7 +288,8 @@
     </div>
 </div>
 
-<div style="max-height:85%; max-width:80%" id="helpInfo" class="modal fade hide pre-scrollable" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+<div style="max-height:85%; max-width:80%" id="helpInfo"
+     class="modal fade hide pre-scrollable" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
     <div><button id="helpInfoCancel1" style="float:right;font-weight:bold;">Close</button></div>
     <h3>Glyphoid (Browser Edition):<br/>Mathematical Handwriting Parser and Evaluator</h3>
 
@@ -325,7 +326,11 @@
         </tr>
         <tr>
             <td>Enter</td>
-            <td>Parse</td>
+            <td>Parse all</td>
+        </tr>
+        <tr>
+            <td>Shift+Enter</td>
+            <td>Parse selected</td>
         </tr>
 
     </table>
@@ -354,7 +359,11 @@
         <li>On a computer with a mouse, the browser edition supports moving of existing tokens. Just use the right mouse button to drag and
             drop the individual tokens.</li>
         <li>You can move more than one tokens at a time by performing region selection on a number of tokens first then drag-and-drop the
-            selected tokens as a whole using the mouse right key.</li>
+            selected tokens as a whole using the mouse right key.
+            <a href="https://youtu.be/SlsEhwm3Whk?t=441">
+                Example 1: <img style="height:1em;" src="res/images/YouTube-icon-dark.png"/>
+            </a>
+        </li>
         <li>Moving of tokens on mobile devices is not yet supported by the browser edition.</li>
     </ul>
 
@@ -364,6 +373,23 @@
             rectangular region. The selected tokens are marked by green bounding boxes. </li>
         <li>An alternative way to select a region is to perform mouse drag & drop while holding the Ctrl key.</li>
         <li>Once tokens are selected, they can be moved, deleted, or merged as a whole.</li>
+    </ul>
+
+    <h5>Incremental parsing</h5>
+    <ul>
+        <li>Once a subset of the tokens are selected, you can click the dropdown button right next to the "Parse" buttont and
+            click "Parse selected". This will cause the selected tokens to be parsed into a single unit. </li>
+        <li>When you later perform parsing on the entire token set with the "Parse" button, the tokens in that token will not
+            be analyzed again. Instead, the result of the previous subset parsing will be utilized, leading to a reduction
+            in the total parsing time.</li>
+        <li>
+            <a href="https://youtu.be/SlsEhwm3Whk?t=147">
+                Example 1: <img style="height:1em;" src="res/images/YouTube-icon-dark.png"/>
+            </a>&nbsp;
+            <a href="https://youtu.be/SlsEhwm3Whk?t=316">
+                Example 2: <img style="height:1em;" src="res/images/YouTube-icon-dark.png"/>
+            </a>
+        </li>
     </ul>
 
     <h5>Zooming and panning field of view</h5>
