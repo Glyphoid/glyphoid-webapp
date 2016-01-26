@@ -231,7 +231,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 "<td><%= stringizerOutput %></td>" +
                 "<td><%= mathTex %></td>" +
                 "<td id='mathML_id'><img src='res/images/ajax-loader.gif'/></td>" +
-                "<td><img id='generatedImage_id' src='res/images/ajax-loader.gif'/></td>" +
+                "<td><a id='generatedImageLink_id' href='javascript:void(0)' target='_blank' disabled='true'><img id='generatedImage_id' src='res/images/ajax-loader.gif'/><br/>Click to open</a></td>" +
                 "<td><%= evaluatorOutput %></td>" +
                 "<td><%= elapsedTimeMillis %></td>" +
             "</tr>");
@@ -292,20 +292,31 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
             $("#mathML_id").attr("id", mathMLElemId);
             var mathMLElem = $("#" + mathMLElemId);
 
-                var generatedImageElemId = "generatedImage_" + parseResult.index;
-                $("#generatedImage_id").attr("id", generatedImageElemId);
-                var generatedImageElem = $("#" + generatedImageElemId);
+            var generatedImageElemId = "generatedImage_" + parseResult.index;
+            var generatedImageLinkElemId = "generatedImageLink_" + parseResult.index;
+            $("#generatedImage_id").attr("id", generatedImageElemId);
+            $("#generatedImageLink_id").attr("id", generatedImageLinkElemId)
+            var generatedImageElem = $("#" + generatedImageElemId);
+            var generatedImageLinkElem = $("#" + generatedImageLinkElemId);
 
             if (success) {
                 // Submit AJAX call to ML conversion service
                 getMathML(function (conversionResult) {
-                    mathMLElem.text(conversionResult);
+                    var textboxId = 'mathML_textbox_' + parseResult.index;
+                    mathMLElem.html("<textarea rows='4' id='" + textboxId + "'></textarea>");
+                    var mathMLTextBoxElem = $("#" + textboxId);
+                    mathMLTextBoxElem.text(conversionResult);
+
                     console.log("In tex2mml success callback: ", conversionResult);
                 });
 
                 // Submit AJAX call to image generation service
                 getGeneratedImage(function (conversionResult) {
-                    generatedImageElem.attr("src", "data:image/png;base64," + conversionResult);
+                    var imageDataUrl = "data:image/png;base64," + conversionResult;
+
+                    generatedImageElem.attr("src", imageDataUrl);
+                    generatedImageLinkElem.attr("href", imageDataUrl);
+                    generatedImageLinkElem.attr("disabled", false);
                 });
 
             } else {

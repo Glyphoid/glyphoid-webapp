@@ -27,7 +27,7 @@
     box-shadow: 1px 1px 2px #d1d1d1;
 
     text-align: left;
-    vertical-align: top;
+    vertical-align: baseline;
 }
 
 .platoTable th {
@@ -38,6 +38,8 @@
     background: #ededed;
     background: -webkit-gradient(linear, left top, left bottom, from(#ededed), to(#ebebeb));
     background: -moz-linear-gradient(top,  #ededed,  #ebebeb);
+
+    vertical-align: top;
 }
 
 .platoTable th:first-child {
@@ -66,7 +68,7 @@
     border-left: 0;
 }
 .platoTable td {
-    padding:2px;
+    padding:0px;
     border-top: 1px solid #ffffff;
     border-bottom:1px solid #e0e0e0;
     border-left: 1px solid #e0e0e0;
@@ -74,6 +76,8 @@
     background: #fafafa;
     background: -webkit-gradient(linear, left top, left bottom, from(#fbfbfb), to(#fafafa));
     background: -moz-linear-gradient(top,  #fbfbfb,  #fafafa);
+
+    vertical-align: top;
 }
 .platoTable tr.even td {
     background: #f6f6f6;
@@ -101,10 +105,12 @@
 
 .platoTableMostRecentRow td {
     background: #d8ffc6;
+    vertical-align: top;
 }
 
 .platoTableMostRecentRow tr:hover td {
     background: #e6ffe6;
+    vertical-align: top;
 }
 
 .parseEvalLabelByline {
