@@ -231,7 +231,7 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 "<td><%= stringizerOutput %></td>" +
                 "<td><%= mathTex %></td>" +
                 "<td id='mathML_id'><img src='res/images/ajax-loader.gif'/></td>" +
-                "<td><a id='generatedImageLink_id' href='javascript:void(0)' target='_blank' disabled='true'><img id='generatedImage_id' src='res/images/ajax-loader.gif'/><br/>Click to open</a></td>" +
+                "<td><a id='generatedImageLink_id' href='javascript:void(0)' target='_blank' disabled='true'><img id='generatedImage_id' src='res/images/ajax-loader.gif'/></a></td>" +
                 "<td><%= evaluatorOutput %></td>" +
                 "<td><%= elapsedTimeMillis %></td>" +
             "</tr>");
