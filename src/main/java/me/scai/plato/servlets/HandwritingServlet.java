@@ -191,6 +191,8 @@ public class HandwritingServlet extends HttpServlet {
                                       "get-last-stroke-curator-user-action",
                                       "undo-stroke-curator-user-action",
                                       "redo-stroke-curator-user-action",
+                                      "disable-productions-by-grammar-nodes",
+                                      "enable-all-productions"
     //                                 "get-all-token-names"      // Get all possible token names from the hw engine
                                         }; // TODO: Replace with enums
 
@@ -597,6 +599,25 @@ public class HandwritingServlet extends HttpServlet {
                                 } catch (IllegalStateException exc) {
                                     errors.add(new JsonPrimitive("Cannot redo stroke curator user action"));
                                 }
+                            } else if (action.equals("disable-productions-by-grammar-nodes")) {
+                                JsonArray nodeNames = reqObj.get("grammarNodeNames").getAsJsonArray();
+
+                                String[] grammarNodeNames = new String[nodeNames.size()];
+                                for (int i = 0; i < nodeNames.size(); ++i) {
+                                    grammarNodeNames[i] = nodeNames.get(i).getAsString();
+                                }
+
+                                try {
+                                    int numDisabled = hwEng.disableProductionsByGrammarNodeNames(grammarNodeNames);
+                                    outObj.add("numDisabled", new JsonPrimitive(numDisabled));
+                                } catch (HandwritingEngineException exc) {
+                                    errors.add(new JsonPrimitive("Failed to disable productions with " +
+                                            grammarNodeNames.length + " grammar node name(s), due to: " +
+                                            exc.getMessage()));
+                                }
+
+                            } else if (action.equals("enable-all-productions")) {
+                                hwEng.enableAllProductions();
                             }
 
                             /* TODO: The following steps may not be necessary for actions such as "parse-token-set" */

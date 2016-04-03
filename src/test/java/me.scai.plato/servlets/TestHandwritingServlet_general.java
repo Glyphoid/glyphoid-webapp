@@ -687,6 +687,97 @@ public class TestHandwritingServlet_general {
     }
 
     /**
+     * Test disabling / enabling productions
+     */
+    @Test
+    public void testDisableEnableProductions() {
+        /* Add 1s token: "1" */
+        JsonObject respObjAdd = helper.addStroke(engineUuid,
+                "{\"numPoints\":5,\"x\":[20, 20, 20, 20, 20],\"y\":[0, 5, 10, 15, 20]}");
+
+        assertEquals(respObjAdd.get("errors").getAsJsonArray().size(), 0);
+        /* Add 2nd token: "1": to the right and a little higher than the first "1" */
+        respObjAdd = helper.addStroke(engineUuid,
+                "{\"numPoints\":5,\"x\":[25, 25, 25, 25, 25],\"y\":[-15, -10, -5, 0, 5]}");
+
+        assertEquals(respObjAdd.get("errors").getAsJsonArray().size(), 0);
+
+        JsonObject respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+
+        assertEquals("(1 ^ 1)", respObjParseTokenSet.get("parseResult").getAsJsonObject()
+                .get("stringizerOutput").getAsString());
+
+        /* Disable some productions */
+        MockHttpServletRequest disableProdsReq   = new MockHttpServletRequest();
+        MockHttpServletResponse disableProdsResp = new MockHttpServletResponse();
+
+        String disableProdsReqBody = "{\"action\" : \"disable-productions-by-grammar-nodes\", " +
+                                     "\"grammarNodeNames\": [\"EXPONENTIATION\", \"FRACTION\"], " +
+                                     "\"engineUuid\": \"" + engineUuid + "\"}";
+        disableProdsReq.setContent(disableProdsReqBody.getBytes());
+
+        try {
+            hwServlet.doPost(disableProdsReq, disableProdsResp);
+        } catch (IOException exc) {
+            fail(exc.getMessage());
+        } catch (ServletException exc) {
+            fail(exc.getMessage());
+        }
+
+        JsonObject respObj = null;
+        try {
+            respObj = jsonParser.parse(disableProdsResp.getContentAsString()).getAsJsonObject();
+        }
+        catch (UnsupportedEncodingException exc) {
+            fail(exc.getMessage());
+        }
+
+        assertNotNull(respObj);
+        assertTrue(respObj.get("numDisabled").getAsInt() > 0);
+
+        /* With "EXPONENTIATION" disabled, the parser result should be different from before */
+        respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+
+        assertEquals("11", respObjParseTokenSet.get("parseResult").getAsJsonObject()
+                .get("stringizerOutput").getAsString());
+
+
+        /* Enable all productions */
+        MockHttpServletRequest enableProdsReq   = new MockHttpServletRequest();
+        MockHttpServletResponse enableProdsResp = new MockHttpServletResponse();
+
+        String enableProdsReqBody = "{\"action\" : \"enable-all-productions\", " +
+                                     "\"engineUuid\": \"" + engineUuid + "\"}";
+        enableProdsReq.setContent(enableProdsReqBody.getBytes());
+
+        try {
+            hwServlet.doPost(enableProdsReq, enableProdsResp);
+        } catch (IOException exc) {
+            fail(exc.getMessage());
+        } catch (ServletException exc) {
+            fail(exc.getMessage());
+        }
+
+        respObj = null;
+        try {
+            respObj = jsonParser.parse(enableProdsResp.getContentAsString()).getAsJsonObject();
+        }
+        catch (UnsupportedEncodingException exc) {
+            fail(exc.getMessage());
+        }
+
+        assertNotNull(respObj);
+
+        /* Parsing gain with all productions enabled should yield the same result as the initial one */
+        respObjParseTokenSet = helper.parseTokenSet(engineUuid, helper.DEFAULT_PARSING_TIMEOUT);
+
+        assertEquals("(1 ^ 1)", respObjParseTokenSet.get("parseResult").getAsJsonObject()
+                .get("stringizerOutput").getAsString());
+
+
+    }
+
+    /**
      * Test concurrent parsing
      */
     @Test

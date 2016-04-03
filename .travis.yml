@@ -11,7 +11,7 @@ install:
   - git clone https://github.com/Glyphoid/tokensets /home/travis/tokensets
   - mkdir /home/travis/math-handwriting-lib
   - git clone https://github.com/Glyphoid/math-handwriting-lib /home/travis/math-handwriting-lib
-  - mvn -f /home/travis/math-handwriting-lib/pom.xml clean install -DtokenSetPathPrefix=/home/travis/tokensets/TS_
+  - mvn -f /home/travis/math-handwriting-lib/pom.xml clean install -DtokenSetPathPrefix=/home/travis/tokensets/TS_ -DnoLargeTokenSetParserTest=true
   - mkdir -p /home/travis/plato-server/token-engine
   - mkdir -p /home/travis/plato-server/token-set-parser
   - mkdir -p /home/travis/plato-server/stroke-curator

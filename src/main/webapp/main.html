@@ -229,9 +229,26 @@
         </table>
     </div>
 
+
     <div id="grammarTab" class="tab-pane fade in">
         <table>
             <tr>
+                <td style="width:40%;">
+                    <table class="platoTable platoGrammarTable" id="grammarSelectTable">
+                        <tr id="grammarSelectTableHeader">
+                            <th>Enabled</th>
+                            <th>Grammar item name</th>
+                        </tr>
+                        <tr >
+                            <td><input id="grammarSelect_exponentiation" type="checkbox" /></td>
+                            <td>Exponentiation</td>
+                        </tr>
+                        <tr >
+                            <td><input id="grammarSelect_fraction" type="checkbox" /></td>
+                            <td>Fraction</td>
+                        </tr>
+                    </table>
+                </td>
                 <td style="width:40%;">
                     <table class="platoTable platoGrammarTable" id="grammarTable">
                         <tr id="grammarTableHeader">
@@ -243,7 +260,7 @@
                     </table>
                 </td>
                 <td style="width:60%;">
-                    <div id="grammarGraph" style="vertical-align: top">Graph to appear...</div>
+                    <div id="grammarGraph" style="vertical-align: top">Client production to show grammar graph...</div>
                 </td>
             </tr>
         </table>
