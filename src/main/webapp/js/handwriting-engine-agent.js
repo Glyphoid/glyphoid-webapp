@@ -294,10 +294,23 @@ define(["jquery", "jquery.blockUI"], function($) {
             f(successCallback, errorCallback);
         };
 
+        /* Action: Disable productions with grammar node names */
+        this.disableProductionsByGrammarNodeNames = function(grammarNodeNmes, successCallback, errorCallback) {
+            var additionalData = { "grammarNodeNames" : grammarNodeNmes };
+            var f = engineCall.bind(self, "disable-productions-by-grammar-nodes", additionalData);
+
+            f(successCallback, errorCallback);
+        };
+
+        /* Action: Enable all productions */
+        this.enableAllProductions = function(successCallback, errorCallback) {
+            var f = engineCall.bind(self, "enable-all-productions", null);
+
+            f(successCallback, errorCallback);
+        };
+
         /* Action: Add stroke */
         this.addStroke = function(lastStroke, successCallback, errorCallback) {
-//            console.log("lastStroke = \"" + JSON.stringify(lastStroke) + "\""); //DEBUG
-
             var additionalData = { "stroke" : lastStroke };
             var f = engineCall.bind(self, "add-stroke", additionalData);
 

@@ -6,6 +6,7 @@ define(["underscore", "jquery", "vis"], function(_, $, vis) {
 
         this.options = {
             grammarTable  : $("#grammarTable"),
+            grammarSelectTable : $("#grammarSelectTable"),
 
             colorLHS      : "#AABBFF",
             colorProd     : "#97C2FC",
@@ -18,10 +19,72 @@ define(["underscore", "jquery", "vis"], function(_, $, vis) {
         $.extend(true, self.options, options);
 
         this.grammarTable = this.options.grammarTable;
+        this.grammarSelectTable = this.options.grammarSelectTable;
         this.gestureManager = gestureManager;
 
         this.gProds = null;  // Array of graphical productions
 
+        this.selectGrammarNodes = [];
+        this.selectGrammarEnabled = [];
+
+        this.grammarSelectChanged = function(e) {
+            var grammarCheckboxes = self.grammarSelectTable.find("input[id^=grammarSelect_]");
+
+            var grammarNodesToDisable = [];
+
+            for (var i = 0; i < grammarCheckboxes.length; ++i) {
+                var checkbox = $(grammarCheckboxes[i]);
+
+                var checkboxId = checkbox.attr("id");
+                var grammarNodeName = checkboxId.replace("grammarSelect_", "").toUpperCase();
+
+                self.selectGrammarNodes.push(grammarNodeName.toUpperCase());
+
+                if (!checkbox.prop("checked")) {
+                    grammarNodesToDisable.push(grammarNodeName);
+                }
+            }
+
+            console.log("To disable: ", grammarNodesToDisable);
+
+            self.gestureManager.hwEngAgent.enableAllProductions(
+                function (responseJSON) {
+                },
+                function (responseJSON) {
+                    console.log("ERROR: Failed to enable all productions");
+                });
+            self.gestureManager.hwEngAgent.disableProductionsByGrammarNodeNames(
+                grammarNodesToDisable,
+                function (responseJSON) {
+                    console.log("Successfully disabled " + grammarNodesToDisable.length + " grammar node(s)");
+                },
+                function (responseJSON) {
+                    console.log("ERROR: Failed to disable grammar nodes");
+                });
+        };
+
+        this.enableAllGrammarNodes = function() {
+            self.selectGrammarNodes = [];
+            self.selectGrammarEnabled = [];
+
+            var grammarCheckboxes = self.grammarSelectTable.find("input[id^=grammarSelect_]");
+
+            for (var i = 0; i < grammarCheckboxes.length; ++i) {
+                var checkbox = $(grammarCheckboxes[i]);
+
+                var checkboxId = checkbox.attr("id");
+                var grammarNodeName = checkboxId.replace("grammarSelect_", "").toUpperCase();
+
+                self.selectGrammarNodes.push(grammarNodeName);
+
+                checkbox.prop("checked", true);
+                self.selectGrammarEnabled.push(true);
+
+                /* Wire up checkbox callbacks */
+                checkbox.on("change", self.grammarSelectChanged);
+            }
+
+        };
 
         this.init = function() {
             // Obtain all the graphical productions
@@ -41,6 +104,7 @@ define(["underscore", "jquery", "vis"], function(_, $, vis) {
                     }
                 );
             }
+
         };
 
         var getProdNetworkDataSets = function(i) {
@@ -165,131 +229,3 @@ define(["underscore", "jquery", "vis"], function(_, $, vis) {
 
     return PlatoGrammarManager;
 });
-
-//                    self.termNames = new Array();     // Terminal names
-//                    var lhsNames = new Array();     // LHS names
-//                    var prodNames = new Array();     // Productions
-//                    var numProds = {};
-//
-//                    var nodes = new Array();
-//                    var edges = new Array();
-//
-//                    for (var i = 0; i < gProds.length; ++i) {
-//                        var lhs = gProds[i].lhs;
-//                        var rhs = gProds[i].rhs;
-//
-//                        if (!Array.isArray(rhs)) {
-//                            throw new Error("rhs ought to be a an array, but is not");
-//                        }
-//
-//                        var sumString = gProds[i].sumString;
-//                        var prodId;
-//
-//                        if (lhsNames.indexOf(lhs) === -1) { // The first time the lhs has been encountered
-//
-//                            lhsNames.push(lhs);
-//
-//                            // Add the LHS
-//                            var lhsId = "lhs_" + lhs;
-//                            nodes.push({
-//                                id: lhsId,
-//                                label: lhs,
-//                                color: colorLHS
-//                            });
-//
-//                            prodNames.push(sumString);
-//
-//                            // Add the production
-//                            prodId = "prod_" + prodNames.length;
-//                            nodes.push({
-//                                id: prodId,
-//                                label: "P1",
-//                                color: colorProd
-//                            });
-//
-//                            // Edge from the LHS to the prod
-//                            edges.push({
-//                                from: lhsId,
-//                                to: prodId,
-//                                physics: false,
-//                                length: edgeLenLHS2Prod,
-//                                color: colorLHS2Prod,
-//                                width: 1,
-//                                dashes: true
-//                            });
-//
-//                            numProds[lhs] = 1;
-//                        } else {
-//                            // Add the production
-//                            var lhsId = "lhs_" + lhs;
-//
-//                            // Add the production
-//                            prodNames.push(sumString);
-//
-//                            numProds[lhs]++;
-//
-//                            prodId = "prod_" + prodNames.length;
-//                            nodes.push({
-//                                id: prodId,
-//                                label: "P" + numProds[lhs],
-//                                color: colorProd
-//                            });
-//
-//                            // Edge from the LHS to the prod
-//                            edges.push({
-//                                from: lhsId,
-//                                to: prodId,
-//                                physics: false,
-//                                length: edgeLenLHS2Prod,
-//                                color: colorLHS2Prod,
-//                                width: 1,
-//                                dashes: true
-//                            });
-//
-//                        }
-//
-//                        // Edges for lhs-rhs connections
-//                        for (var rhsIdx in rhs) {
-//                            var rhsName = rhs[rhsIdx];
-//                            var rhsIsTerminal = gProds[i].rhsIsTerminal[rhsIdx];
-//
-//                            var targId;
-//                            if (!rhsIsTerminal) {
-//                                targId = "lhs_" + rhsName;
-//                            } else {
-//                                targId = "term_" + rhsName;
-//
-//                                if (self.termNames.indexOf(rhsName) === -1) { // Encountering new terminal
-//                                    nodes.push({
-//                                        id: targId, // Terminal ID
-//                                        label: rhsName,
-//                                        color: colorTerm
-//                                    });
-//
-//                                    self.termNames.push(rhsName);
-//                                }
-//                            }
-//
-//                            edges.push({
-//                                from: prodId,
-//                                to: targId,
-//                                arrows: "to",
-//                                width: rhsIdx == 0 ? widthHead : widthNonHead
-//                            });
-//                        }
-//                    }
-//
-//                    var lhsNodesDataSet = new vis.DataSet(nodes);
-//                    var edgesDataSet = new vis.DataSet(edges);
-//
-//                    // create a network
-//                    var container = document.getElementById('grammarGraph');
-//                    var grammarGraphData = {
-//                        nodes: lhsNodesDataSet,
-//                        edges: edgesDataSet
-//                    };
-//                    var options = {
-//                        height: Number($("#gestureCanvas").attr("height")) * 2,
-//                        width: "100%"
-//                    };
-//                    var network = new vis.Network(container, grammarGraphData, options);

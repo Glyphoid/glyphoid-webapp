@@ -96,7 +96,8 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 "</tr>");
 
         var grammarManager = new PlatoGrammarManager({
-            graphicalProductionRowTemplate: gProdRowTemplate
+            graphicalProductionRowTemplate: gProdRowTemplate,
+            hwEngAgent: gestureManager.hwEngAgent
         }, gestureManager);
 
         $("#printPaths").on("click", function(e) {
@@ -636,8 +637,6 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
 
             $("#grammar").on("click", function(e) {
                 e.preventDefault();
-
-                grammarManager.init();
             });
 
             // Modal dialog close callbacks
@@ -656,8 +655,9 @@ require(["jquery", "sprintf", "plato-gesture-manager", "plato-grammar-manager", 
                 $("#mobileDownloads").modal("hide");
             });
 
-
             gestureManager.updateUIControlState();
+
+            grammarManager.enableAllGrammarNodes();
         });
 
         var mainDev = new MainDev(gestureManager);
